@@ -94,7 +94,12 @@ class Install extends Migration
                 'dateCreated' => $this->dateTime()->notNull(),
             ]);
 
-            $this->createIndex(null, '{{%counter_visitors}}', ['page'], false);
+            if ($this->db->getIsPgsql()) {
+                $this->createIndex(null, '{{%counter_visitors}}', ['page'], false);
+            } else {
+                $this->createIndex(null, '{{%counter_visitors}}', ['page(768)'], false);
+            }
+
             $this->createIndex(null, '{{%counter_visitors}}', ['visitor'], false);
             $this->createIndex(null, '{{%counter_visitors}}', ['siteId'], false);
             $this->createIndex(null, '{{%counter_visitors}}', ['dateCreated'], false);
@@ -123,8 +128,11 @@ class Install extends Migration
                 'dateCreated' => $this->dateTime()->notNull(),
                 'dateUpdated' => $this->dateTime()->notNull(),
             ]);
-
-            $this->createIndex(null, '{{%counter_page_visits}}', ['page'], false);
+            if ($this->db->getIsPgsql()) {
+                $this->createIndex(null, '{{%counter_page_visits}}', ['page'], false);
+            } else {
+                $this->createIndex(null, '{{%counter_page_visits}}', ['page(768)'], false);
+            }
             $this->createIndex(null, '{{%counter_page_visits}}', ['siteId'], false);
             $this->createIndex(null, '{{%counter_page_visits}}', ['dateUpdated'], false);
             $this->createIndex(null, '{{%counter_page_visits}}', ['lastVisit'], false);
