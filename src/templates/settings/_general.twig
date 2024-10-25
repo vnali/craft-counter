@@ -1,0 +1,424 @@
+{% extends 'counter/_layouts/index.twig' %}
+
+{% set title = 'General Settings'|t('counter') %}
+
+{% set crumbs = [] %}
+
+{% set selectedSubnavItem = 'settings' %}
+
+{% block content %}
+    {% import "_includes/forms" as forms %}
+	<form action="" method="post" accept-charset="UTF-8" data-saveshortcut>
+		{{ redirectInput('counter/settings/general') }}
+		{{ csrfInput() }}
+        <div class="grid-container">
+            <div class="grid-item item1">
+                {{ forms.lightswitchField({
+                    label: 'Register counter automatically'|t('counter'),
+                    id: 'registerCounter',
+                    name: 'registerCounter',
+                    required: false,
+                    errors: settings.getErrors('registerCounter'),
+                    value: 1,
+                    on: settings.registerCounter is defined ? settings.registerCounter,
+                    instructions: 'Specify whether the script for counting should be automatically registered on all site pages.'|t('counter'),
+                    tip: 'Otherwise, the counter should be used by registering the CounterAsset manually or the calling counter service, depending on the site’s caching policy.'|t('counter')
+                }) }}
+            </div>
+            <div class="grid-item item13">
+                {{ forms.lightswitchField({
+                    label: 'Compatibility with outdated browsers'|t('counter'),
+                    id: 'supportOutdatedBrowsers',
+                    name: 'supportOutdatedBrowsers',
+                    required: false,
+                    errors: settings.getErrors('supportOutdatedBrowsers'),
+                    value: 1,
+                    on: settings.supportOutdatedBrowsers is defined ? settings.supportOutdatedBrowsers,
+                    instructions: 'By enabling this option, the counter script will function in browsers such as IE11.'|t('counter'),
+                    tip: 'Disabling this option will make the page load faster.'|t('counter'),
+                }) }}
+            </div>
+            <div class="grid-item item14">
+                {{ forms.lightswitchField({
+                    label: 'Prevent HTTP requests for the counter.'|t('counter'),
+                    id: 'disableCountController',
+                    name: 'disableCountController',
+                    required: false,
+                    errors: settings.getErrors('disableCountController'),
+                    value: 1,
+                    on: settings.disableCountController is defined ? settings.disableCountController,
+                    instructions: 'Enable this option if your site does not have static cache enabled and you are calling the counter via services in Twig.'|t('counter'),
+                    tip: 'Enabling this option prevents access to the counter via the HTTP requests and registration of the counter asset.'|t('counter'),
+                }) }}
+            </div>
+            <div class="break-item break4">
+                <hr>
+            </div>
+            <div class="grid-item item2">
+                {{ forms.textField({
+                    label: 'Visits interval'|t('counter'),
+                    id: 'visitsInterval',
+                    name: 'visitsInterval',
+                    required: false,
+                    errors: settings.getErrors('visitsInterval'),
+                    value: settings.visitsInterval,
+                    on: settings.visitsInterval is defined ? settings.visitsInterval,
+                    instructions: 'After how many seconds should a visitor’s visit be counted again?'|t('counter'),
+                    tip: 'Insert 0 if you want to count every visit.'|t('counter'),
+                }) }}
+            </div>
+            <div class="grid-item item3">
+                {{ forms.textField({
+                    label: 'Online threshold in seconds'|t('counter'),
+                    id: 'onlineThreshold',
+                    name: 'onlineThreshold',
+                    required: false,
+                    errors: settings.getErrors('onlineThreshold'),
+                    value: settings.onlineThreshold,
+                    on: settings.onlineThreshold is defined ? settings.onlineThreshold,
+                    instructions: 'Consider the user as online if their activity is within this threshold.'|t('counter'),
+                    tip: 'The minimum value is 1.'|t('counter'),
+                }) }}
+            </div>
+            <div class="break-item break1">
+                <hr>
+            </div>
+            <div class="grid-item item4">
+                {{ forms.lightswitchField({
+                    label: 'Remove all query parameters'|t('counter'),
+                    id: 'removeAllQueryParams',
+                    name: 'removeAllQueryParams',
+                    required: false,
+                    errors: settings.getErrors('removeAllQueryParams'),
+                    value: 1,
+                    on: settings.removeAllQueryParams is defined ? settings.removeAllQueryParams,
+                    instructions: 'Specify whether all query params should be removed before counting page visits.'|t('counter'),
+                }) }}
+            </div>
+            <div class="grid-item item5">
+                {{ forms.lightswitchField({
+                    label: 'Remove the URL fragment'|t('counter'),
+                    id: 'removeUrlFragment',
+                    name: 'removeUrlFragment',
+                    required: false,
+                    errors: settings.getErrors('removeUrlFragment'),
+                    value: 1,
+                    on: settings.removeUrlFragment is defined ? settings.removeUrlFragment,
+                    instructions: 'Specify whether the # part of a URL should be removed before counting page visits.'|t('counter'),
+                }) }}
+            </div>
+            <div class="grid-item item6">
+                {{ forms.textField({
+                    label: 'Remove query parameters'|t('counter'),
+                    id: 'removeQueryParams',
+                    name: 'removeQueryParams',
+                    required: false,
+                    errors: settings.getErrors('removeQueryParams'),
+                    value: settings.removeQueryParams,
+                    on: settings.removeQueryParams is defined ? settings.removeQueryParams,
+                    instructions: 'Which query parameters should be removed before counting page.'|t('counter'),
+                    tip: 'Separate query parameters with a comma.'|t('counter'),
+                }) }}
+            </div>
+            <div class="break-item break2">
+                <hr>
+            </div>
+            <div class="grid-item item7">
+                {{ forms.lightswitchField({
+                    label: 'Ignore bots'|t('counter'),
+                    id: 'ignoreBots',
+                    name: 'ignoreBots',
+                    required: false,
+                    errors: settings.getErrors('ignoreBots'),
+                    value: 1,
+                    on: settings.ignoreBots is defined ? settings.ignoreBots,
+                    instructions: 'Specify whether bot visits should be ignored.'|t('counter'),
+                }) }}
+            </div>
+            <div class="grid-item item8">
+                {{ forms.lightswitchField({
+                    label: 'Ignore all authenticated users'|t('counter'),
+                    id: 'ignoreAllUsers',
+                    name: 'ignoreAllUsers',
+                    required: false,
+                    errors: settings.getErrors('ignoreAllUsers'),
+                    value: 1,
+                    on: settings.ignoreAllUsers is defined ? settings.ignoreAllUsers,
+                    instructions: 'Specify whether visits by all authenticated users should be ignored.'|t('counter'),
+                }) }}
+            </div>
+            <div class="grid-item item9">
+                {% if (craft.app.edition.name != 'Solo') and currentUser.can('editUsers') %}
+                    {{ forms.elementSelectField({
+                        label: 'Ignore selected users'|t('counter'),
+                        id: 'ignoreUserIds',
+                        name: 'ignoreUserIds',
+                        elementType: 'craft\\elements\\User',
+                        elements: settings.ignoreUserIds ?? null,
+                        errors: settings.getErrors('ignoreUserIds'),
+                        instructions: 'Specify which users’ visits should be ignored.'|t('counter'),
+                    }) }}
+                {% endif %}
+            </div>
+            <div class="grid-item item10">
+                {% if (craft.app.edition.name != 'Solo') and currentUser.can('editUsers') %}
+                    {{ forms.multiSelectField({
+                        label: 'Ignore selected groups'|t('counter'),
+                        id: 'ignoreGroups',
+                        name: 'ignoreGroups',
+                        options: groups,
+                        values: settings.ignoreGroups is defined ?  settings.ignoreGroups,
+                        required: false,
+                        instructions: 'Specify which user groups’ visits should be ignored.'|t('counter'),
+                    }) }}
+                {% endif %}
+            </div>
+            <div class="break-item break3">
+                <hr>
+            </div>
+            <div class="grid-item item11">
+                {% set fieldRows = [] %}
+                {% for site in craft.app.sites.getAllSites() %}
+                    {% set siteSetting = siteSettings[site.handle ~ site.id] ?? null %}
+                    {% set fieldRows = fieldRows|merge({
+                        (site.handle ~ site.id): {
+                            heading: site.name|t('site'),
+                            enabledCounter: include('_includes/forms/lightswitch', {
+                                name: 'siteSettingFields['~site.handle~site.id~'][enabledCounter]',
+                                on: siteSetting ? siteSetting.enabledCounter,
+                                small: true
+                            }),
+                            calendar: include('_includes/forms/select', {
+                                name: 'siteSettingFields['~site.handle~site.id~'][calendar]',
+                                options: calendars,
+                                id: 'calendar'~loop.index,
+                                value: siteSetting ? siteSetting.calendar,
+                            }),
+                            weekStartDay: include('_includes/forms/select', {
+                                name: 'siteSettingFields['~site.handle~site.id~'][weekStartDay]',
+                                options: days,
+                                value: siteSetting ? siteSetting.weekStartDay,
+                            })
+                        }|filter
+                    }) %}
+                {% endfor %}
+
+                {% set cols = {
+                    heading: {
+                            type: 'heading',
+                            heading: "Site"|t('counter'),
+                            thin: true,
+                        },
+                        enabledCounter: {
+                            type: 'html',
+                            heading: "Site Counter"|t('counter'),
+                            thin: true,
+                        },
+                        weekStartDay: {
+                            type: 'html',
+                            heading: 'Start of the week'|t('counter'),
+                        },
+                } %}
+
+                {% if settings.showAllCalendars %}
+                    {% set cols = cols | merge({
+                        calendar: {
+                            type: 'html',
+                            heading: 'Calendar'|t('counter'),
+                        },
+                    }) %}
+                {% endif %}
+
+                {{ forms.editableTableField({
+                    label: "Sites settings"|t('counter'),
+                    id: 'siteSettingsTable',
+                    name: 'siteSettingFields',
+                    cols: cols|filter,
+                    rows: fieldRows,
+                    staticRows: true,
+                    errors: settings.getErrors('siteSettings')|unique,
+                    instructions: "Specify for which sites, site counters, and page counters should be available."|t('counter'),
+                }) }}
+            </div>
+            <div class="grid-item item12">
+                <p>
+                    <input type="hidden" name="action" value="counter/settings/general-save">
+                    <input type="submit" class="btn submit" value="{{ 'Save'|t('app') }}">
+                </p>
+            </div>
+        </div>
+	</form>
+{% endblock %}
+{% js %}
+    // Show/hide based on 
+    if ($('input[name=registerCounter]').val()) {
+        $('.item13').css('display', 'block');
+    }
+    if (!$('input[name=registerCounter]').val()) {
+        $('.item14').css('display', 'block');
+    }
+    $('#registerCounter').on('change', function() {
+        var isEnabled = $(this).find('input').val();
+        if (isEnabled) {
+            $('.item14').css('display', 'none');
+            $('#disableCountController.lightswitch').data('lightswitch').turnOff(true);
+            $('.item13').css('display', 'block');
+        } else {
+            $('.item13').css('display', 'none');
+            $('.item14').css('display', 'block');
+        }
+    });
+    if ($('input[name=removeAllQueryParams]').val() == '1') {
+        $('#removeQueryParams-field').css('display', 'none');
+        $('#removeQueryParams-field').css('display', 'none');
+    }
+    $('#removeAllQueryParams').on('change', function() {
+        var isEnabled = $(this).find('input').val();
+        if (isEnabled) {
+            $('#removeQueryParams-field').css('display', 'none');
+            $('#removeQueryParams-field').css('display', 'none');
+        } else {
+            $('#removeQueryParams-field').css('display', 'block');
+            $('#removeQueryParams-field').css('display', 'block');
+        }
+    });
+    if ($('input[name=ignoreAllUsers]').val() == '1') {
+        $('#ignoreUserIds-field').css('display', 'none');
+        $('#ignoreGroups-field').css('display', 'none');
+    }
+    $('#ignoreAllUsers').on('change', function() {
+        var isEnabled = $(this).find('input').val();
+        if (isEnabled) {
+            $('#ignoreUserIds-field').css('display', 'none');
+            $('#ignoreGroups-field').css('display', 'none');
+        } else {
+            $('#ignoreUserIds-field').css('display', 'block');
+            $('#ignoreGroups-field').css('display', 'block');
+        }
+    });
+    // Selectize ignore groups
+    $('#ignoreGroups').selectize({
+            plugins: ['remove_button'],
+            dropdownParent: 'body'
+    });
+{% endjs %}
+
+{% css %}
+
+    .item13, .item14{
+        display: none;
+    }
+
+    #siteSettingsTable .lightswitch{
+        margin-top: 10px;
+    }
+
+    .grid-container {
+        display: grid;
+        grid-template-areas: 
+            "item1 item13 ."
+            "item14 item14 ."
+            "break4 break4 break4"
+            "item2 item3 ."
+            "break1 break1 break1"
+            "item4 item5 ."
+            "item6 item6 item6"
+            "break2 break2 break2"
+            "item7 item8 ."
+            "item9 item10 item10"
+            "break3 break3 break3"
+            "item11 item11 item11"
+            "item12 item12 item12";
+        gap: 10px;
+        width: 100%;
+    }
+
+    .grid-item {
+        padding: 10px 20px;
+        border-radius: 5px;
+    }
+
+    .break-item {
+        padding: 2px 20px;
+        border-radius: 5px;
+    }
+
+    .item1 {
+        grid-area: item1;
+    }
+
+    .item2 {
+        grid-area: item2;
+    }
+
+    .item3 {
+        grid-area: item3;
+    }
+
+    .item4 {
+        grid-area: item4;
+    }
+
+    .item5 {
+        grid-area: item5;
+    }
+
+    .item6 {
+        grid-area: item6;
+    }
+
+    .item7 {
+        grid-area: item7;
+    }
+
+    .item8 {
+        grid-area: item8;
+    }
+
+    .item9 {
+        grid-area: item9;
+    }
+
+    .item10 {
+        grid-area: item10;
+    }
+
+    .item11 {
+        grid-area: item11;
+    }
+
+    .item12 {
+        grid-area: item12;
+    }
+
+    .item13 {
+        grid-area: item13;
+    }
+
+    .item14 {
+        grid-area: item14;
+    }
+
+    .break1 {
+        grid-area: break1;
+    }
+
+    .break2 {
+        grid-area: break2;
+    }
+
+    .break3 {
+        grid-area: break3;
+    }
+
+    .break4 {
+        grid-area: break4;
+    }
+
+    .grid-item::after {
+        content: "";
+        display: block;
+        clear: both;
+    }
+
+{% endcss %}

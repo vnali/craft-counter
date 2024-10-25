@@ -1,0 +1,26 @@
+<div class="counter-widget-stat counter-widget-table-wrapper">
+    <div id="{{ id }}"></div>
+</div>
+{% set tableData = [] %}
+
+{% for notVisitedPage in notVisitedPages %}
+    {% set title = notVisitedPage.page|truncate(50, '...') %}
+    {% set tableData = tableData|merge([{
+        title: title,
+        url: notVisitedPage.page|e,
+        lastVisit: notVisitedPage.lastVisit,
+    }]) %}
+{% endfor %}
+
+{% js %}
+var columns = [
+    { name: '__slot:title', title: Craft.escapeHtml(Craft.t('counter', 'Page')) },
+    { name: 'lastVisit', title: Craft.escapeHtml(Craft.t('counter', 'Last Visit')) },
+];
+
+new Craft.VueAdminTable({
+    columns: columns,
+    container: '#{{ id }}',
+    tableData: {{ tableData|json_encode|raw }}
+});
+{% endjs %}

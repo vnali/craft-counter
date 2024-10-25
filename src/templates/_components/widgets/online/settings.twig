@@ -1,0 +1,34 @@
+{% import "_includes/forms" as forms %}
+
+<div id="{{ id }}">
+    {% if craft.app.getIsMultiSite() %}
+    {% set allSites = craft.app.sites.getAllSites() %}
+    {% set editableSites = craft.app.sites.getEditableSites() %}
+        {% set siteInput %}
+            <div class="select">
+                <select id="site-id" name="siteId">
+                    {% if allSites|length == editableSites|length %}
+                        <option value="*"{% if widget.siteId=='*' %} selected{% endif %}>{{ 'All'|t('site') }}</option>
+                    {% endif %}
+                    {% for site in editableSites %}
+                        <option value="{{ site.id }}"{% if site.id == widget.siteId %} selected{% endif %}>{{ site.name|t('site') }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+        {% endset %}
+
+        {{ forms.field({
+            id: 'site-id',
+            label: "Site"|t('app')
+        }, siteInput) }}
+    {% endif %}
+
+    {{ forms.textField({
+        label: 'Online threshold in seconds'|t('counter'),
+        id: 'onlineThreshold',
+        name: 'onlineThreshold',
+        required: false,
+        value: widget.onlineThreshold,
+        on: widget.onlineThreshold is defined ? widget.onlineThreshold
+    }) }}
+</div>

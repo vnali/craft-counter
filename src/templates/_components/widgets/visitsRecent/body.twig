@@ -1,0 +1,53 @@
+<div class="counter-widget-stat">
+{% apply spaceless %}
+    <strong class="counter-widget-stat-number">{{ number ? number : 0 }}</strong>
+{% endapply %}
+</div>
+<br>
+{% if widget.showChart is defined and widget.showChart %}
+    <div>
+    <canvas id="{{ namespaceId }}"></canvas>
+    </div>
+
+    {% js %}
+    var ctx = document.getElementById('{{ namespaceId }}');
+
+    new Chart(ctx, {
+        type: 'line',
+        data: {
+        labels: {{ label|raw }},
+        datasets: [{
+            label: Craft.escapeHtml(Craft.t('counter', 'Visits')),
+            data: {{ visitsData }},
+            borderWidth: 1,
+            yAxisID: 'visit',
+        }                    
+        {% if widget.showVisitor and showVisitorOnChart %}
+            ,{
+                label: Craft.escapeHtml(Craft.t('counter', 'Visitors')),
+                yAxisID: 'visitor',
+                data: {{ visitorsData }},
+                borderWidth: 1,
+            }
+        {% endif %}
+        ]
+        },
+        options: {
+            scales: {
+                {% if widget.showVisitor and showVisitorOnChart %}
+                visitor: {
+                    display: true,
+                    position: 'right',
+                    grid: {
+                        drawOnChartArea: false, // only want the grid lines for one axis to show up
+                    },
+                },
+                {% endif %}
+                visit: {
+                    position: 'left',
+                }
+            }
+        }
+    });
+    {% endjs %}
+{% endif %}

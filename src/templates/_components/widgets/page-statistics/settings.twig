@@ -1,0 +1,96 @@
+{% import "_includes/forms" as forms %}
+
+<div id="{{ id }}">
+    {{ forms.selectField({
+        label: 'Page'|t('counter'),
+        id: 'pageId',
+        name: 'pageId',
+        options: [],
+        value: widget.pageId,
+        errors: widget.getErrors('pageId'),
+        required: true,
+    }) }}
+
+    {{ forms.multiSelectField({
+        label: 'Items'|t('counter'),
+        id: 'items',
+        name: 'items',
+        options: items,
+        values: widget.items,
+        errors: widget.getErrors('items'),
+        required: true,
+    }) }}
+</div>
+
+{% if selectedPage %}
+    {% set options = [{'id': widget.pageId, 'name': selectedPage }] %}
+{% else %}
+    {% set options = [] %}
+{% endif %}
+
+{% css %}
+    div[data-attribute=pageId] .select
+    {
+        min-width: 300px;
+    }
+    div[data-attribute=pageId] .selectize-input
+    {
+       overflow: hidden;
+    }
+{% endcss %}
+{% js %}
+
+    var csrfTokenName;
+    var csrfTokenValue;
+    $.ajax({
+        url: '{{ sessionInfoUrl }}',
+        type: 'GET',
+        dataType: 'json',
+        success: function(result) { 
+            csrfTokenName = result.csrfTokenName;
+            csrfTokenValue = result.csrfTokenValue;
+        }
+    });
+
+    $('#{{ namespaceId }} div[data-attribute=items] select').selectize({
+        plugins: ['remove_button'],
+        dropdownParent: 'body',
+    });
+
+    $('#{{ namespaceId }} div[data-attribute=pageId] select').selectize({
+        maxItems: 1,
+        valueField: 'id',
+        labelField: 'name',
+        searchField: 'name',
+        autocomplete: true,
+        persist: false,
+        plugins: ['remove_button'],
+        dropdownParent: 'body',
+        create: false,
+        openOnFocus: false,
+        options: {{ options|json_encode|raw }},
+        items: ['{{ widget.pageId }}'],
+        render: {
+            option: function(item, escape) {
+                return '<div>' + item.name + '</div>';
+            }
+        },
+        load: function(query, callback) {
+            if (!query.length) {
+                return callback();
+            }
+            var data = {};
+            data[csrfTokenName] = csrfTokenValue;
+            data['search'] = query,
+            $.ajax({
+                url: '{{ pageListURL }}',
+                type: 'POST',
+                dataType: 'json',
+                data: data,
+                success: function(res) {
+                    callback(res);
+                }
+            });
+        }
+    });
+{% endjs %}

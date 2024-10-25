@@ -1,0 +1,5 @@
+{% if currentUser.can('counter-manageSettings') %}
+    {% redirect 'counter/settings' %}
+{% else %}
+    {% redirect 'dashboard' %}
+{% endif %}

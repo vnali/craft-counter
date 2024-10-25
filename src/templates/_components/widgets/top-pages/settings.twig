@@ -1,0 +1,57 @@
+{% import "_includes/forms" as forms %}
+
+<div id="{{ id }}">
+    {% if craft.app.getIsMultiSite() %}
+    {% set allSites = craft.app.sites.getAllSites() %}
+    {% set editableSites = craft.app.sites.getEditableSites() %}
+        {% set siteInput %}
+            <div class="select">
+                <select id="site-id" name="siteId">
+                    {% if allSites|length == editableSites|length %}
+                        <option value="*"{% if widget.siteId=='*' %} selected{% endif %}>{{ 'All'|t('site') }}</option>
+                    {% endif %}
+                    {% for site in editableSites %}
+                        <option value="{{ site.id }}"{% if site.id == widget.siteId %} selected{% endif %}>{{ site.name|t('site') }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+        {% endset %}
+
+        {{ forms.field({
+            id: 'site-id',
+            label: "Site"|t('app')
+        }, siteInput) }}
+    {% endif %}
+
+    {% set rangeInput %}
+        <div class="select">
+            <select id="dateRange" name="dateRange">
+                <option value="all"{% if widget.dateRange=='all' %} selected{% endif %}>{{ 'All'|t('counter') }}</option>
+                <option value="allIgnoreInterval"{% if widget.dateRange=='allIgnoreInterval' %} selected{% endif %}>{{ 'All (Ignore interval)'|t('counter') }}</option>
+                <option value="today"{% if widget.dateRange=='today' %} selected{% endif %}>{{ 'Today'|t('counter') }}</option>
+                <option value="thisWeek"{% if widget.dateRange=='thisWeek' %} selected{% endif %}>{{ 'This week'|t('counter') }}</option>
+                <option value="thisMonth"{% if widget.dateRange=='thisMonth' %} selected{% endif %}>{{ 'This month'|t('counter') }}</option>
+                <option value="thisYear"{% if widget.dateRange=='thisYear' %} selected{% endif %}>{{ 'This year'|t('counter') }}</option>
+                <option value="yesterday"{% if widget.dateRange=='yesterday' %} selected{% endif %}>{{ 'Yesterday'|t('counter') }}</option>
+                {#
+                <option value="previousWeek"{% if widget.dateRange=='previousWeek' %} selected{% endif %}>{{ 'Previous week'|t('counter') }}</option>
+                <option value="previousMonth"{% if widget.dateRange=='previousMonth' %} selected{% endif %}>{{ 'Previous month'|t('counter') }}</option>
+                <option value="previousYear"{% if widget.dateRange=='previousYear' %} selected{% endif %}>{{ 'Previous year'|t('counter') }}</option>
+                #}
+            </select>
+        </div>
+    {% endset %}
+
+    {{ forms.field({
+        id: 'rangeInput',
+        label: "Date Range"|t('counter')
+    }, rangeInput) }}
+
+    {{ forms.textField({
+        label: 'Limit'|t('counter'),
+        id: 'limit',
+        name: 'limit',
+        required: true,
+        value: widget.limit,
+    }) }}
+</div>

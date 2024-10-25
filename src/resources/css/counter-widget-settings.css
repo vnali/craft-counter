@@ -1,0 +1,9 @@
+.widget.new div[data-attribute="showVisitor"] {
+    display: none;
+}
+.widget.new div[data-attribute="visitorTypeInput"] {
+    display: none;
+}
+.widget.new div[data-attribute="preferredIntervalInput"] {
+    display: none;
+}

@@ -1,0 +1,68 @@
+<div class="counter-widget-stat">
+{% apply spaceless %}
+    <strong class="counter-widget-stat-number">{{ maxOnline ? maxOnline : 0 }}</strong><br>
+    <span class="counter-widget-stat-date">{{ maxOnlineDate }}</span><br>
+{% endapply %}
+</div>
+{% if widget.showChart is defined and widget.showChart %}
+    <div>
+        <canvas id="{{namespaceId }}"></canvas>
+    </div>
+
+    {% js %}
+    var ctx = document.getElementById('{{ namespaceId }}');
+    new Chart(ctx, {
+        type: 'line',
+        data: {
+        labels: {{ labels|raw }},
+        datasets: [{
+            label: Craft.escapeHtml(Craft.t('counter', 'Max Online')),
+            data: {{ maxOnlineData|raw }},
+            borderWidth: 1,
+            yAxisID: 'maxOnline',
+        }                  
+        {% if widget.showVisitor and showVisitorOnChart %}
+            ,{
+                label: Craft.escapeHtml(Craft.t('counter', 'Visitors')),
+                borderWidth: 1,
+                yAxisID: 'visitor',
+                data: {{ visitorsData|raw }}
+            }
+        {% endif %}
+        ]},
+        options: {
+            plugins: {
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            if (context.dataset.yAxisID == 'maxOnline') {
+                                const dataIndex = context.dataIndex;
+                                const datasets = context.chart.data.datasets;
+                                var label = context.dataset.data[dataIndex].y;
+                                if (context.dataset.data[dataIndex].time) {
+                                    label = label +' - ' + context.dataset.data[dataIndex].time;
+                                }
+                                return label;
+                            }
+                        }
+                    }
+                }
+            },
+            scales: {
+                {% if widget.showVisitor and showVisitorOnChart %}
+                visitor: {
+                    display: true,
+                    position: 'right',
+                    grid: {
+                        drawOnChartArea: false, // only want the grid lines for one axis to show up
+                    },
+                },
+                {% endif %}
+                maxOnline: {
+                    position: 'left',
+                }
+            }
+        }
+    });
+    {% endjs %}
+{% endif %}

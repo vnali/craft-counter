@@ -1,0 +1,18 @@
+<div>
+    <canvas id="{{ namespaceId }}"></canvas>
+</div>
+
+{% js %}
+var ctx = document.getElementById('{{ namespaceId }}');
+
+new Chart(ctx, {
+    type: 'doughnut',
+    data: {
+        labels: {{ labels|raw }},
+        datasets: [{
+            label: Craft.escapeHtml(Craft.t('counter', 'Number of next pages')),
+            data: {{ data }},
+        }]
+    },
+});
+{% endjs %}

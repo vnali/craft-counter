@@ -1,0 +1,75 @@
+{% import "_includes/forms" as forms %}
+
+{% set widgetId = '#widget' ~ widget.id %}
+<div id="{{ id }}" class="max-online-widget">
+    {% if craft.app.getIsMultiSite() %}
+        {% set allSites = craft.app.sites.getAllSites() %}
+        {% set editableSites = craft.app.sites.getEditableSites() %}
+        {% set siteInput %}
+            <div class="select">
+                <select id="site-id" name="siteId">
+                    {% if allSites|length == editableSites|length %}
+                        <option value="*"{% if widget.siteId=='*' %} selected{% endif %}>{{ 'All'|t('site') }}</option>
+                    {% endif %}
+                    {% for site in editableSites %}
+                        <option value="{{ site.id }}"{% if site.id == widget.siteId %} selected{% endif %}>{{ site.name|t('site') }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+        {% endset %}
+
+        {{ forms.field({
+            id: 'site-id',
+            label: "Site"|t('app')
+        }, siteInput) }}
+    {% endif %}
+
+    {% set display = "none" %}
+    {% if showAllCalendars %}
+        {% set display = "block" %}
+    {% endif %}
+
+    {% include 'counter/_components/widgets/_includes/_calendarField' %}
+
+    {% include 'counter/_components/widgets/_includes/_dateRangeField' with { id: namespaceId, widget: widget } %}
+
+    {{ forms.lightswitchField({
+        label: 'Show chart'|t('counter'),
+        id: 'showChart',
+        name: 'showChart',
+        required: false,
+        value: 1,
+        on: widget.showChart is defined ? widget.showChart, 
+    }) }}
+    
+    {{ forms.lightswitchField({
+        label: 'Show visitors when applicable'|t('counter'),
+        id: 'showVisitor',
+        name: 'showVisitor',
+        required: false,
+        value: 1,
+        on: widget.showVisitor is defined ? widget.showVisitor,
+        tip: 'Only when x-axis is daily or hourly'|t('counter'),
+    }) }}
+</div>
+{% css %}
+    {{ widgetId }} div[data-attribute="showVisitor"] {
+        display: none;
+    }
+{% endcss %}
+
+{% js %}
+    if ($('{{ widgetId }} div[data-attribute="showChart"] input').val() == '1') {
+        $('{{ widgetId }} div[data-attribute="showVisitor"]').css('display', 'block');
+    }
+    $('{{ widgetId }} div[data-attribute="showChart"] .lightswitch').on('change', function() {
+        var isEnabled = $(this).find('input').val();
+        if (isEnabled) {
+            $('{{ widgetId }} div[data-attribute="showVisitor"]').css('display', 'block');
+        } else {
+            $('{{ widgetId }} div[data-attribute="showVisitor"] .lightswitch').data('lightswitch').turnOff(true);
+            $('{{ widgetId }} div[data-attribute="showVisitor"]').css('display', 'none');
+        }
+    });
+{% endjs %}
+{% do view.registerAssetBundle("vnali\\counter\\assets\\CounterWidgetSettingsAsset") %}

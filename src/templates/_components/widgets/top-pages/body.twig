@@ -1,0 +1,26 @@
+<div class="counter-widget-stat counter-widget-table-wrapper">
+    <div id="{{ id }}"></div>
+</div>
+{% set tableData = [] %}
+
+{% for topPage in topPages %}
+    {% set title = topPage.page|truncate(50, '...') %}
+    {% set tableData = tableData|merge([{
+        title: title,
+        url: topPage.page|e,
+        visits: topPage.visits,
+    }]) %}
+{% endfor %}
+
+{% js %}
+var columns = [
+    { name: '__slot:title', title: Craft.escapeHtml(Craft.t('counter', 'Page')) },
+    { name: 'visits', title: Craft.escapeHtml(Craft.t('counter', 'Visits')) },
+];
+
+new Craft.VueAdminTable({
+    columns: columns,
+    container: '#{{ id }}',
+    tableData: {{ tableData|json_encode|raw }}
+});
+{% endjs %}

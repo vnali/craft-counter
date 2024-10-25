@@ -1,0 +1,1 @@
+# Release Notes for Counter plugin for Craft 5

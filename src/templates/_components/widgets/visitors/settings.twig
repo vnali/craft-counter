@@ -1,0 +1,108 @@
+{% import "_includes/forms" as forms %}
+
+{% set widgetId = '#widget' ~ widget.id %}
+<div id="{{ id }}" class="visitors-widget">
+    {% if craft.app.getIsMultiSite() %}
+    {% set allSites = craft.app.sites.getAllSites() %}
+    {% set editableSites = craft.app.sites.getEditableSites() %}
+
+        {% set siteInput %}
+            <div class="select">
+                <select id="site-id" name="siteId">
+                    {% if allSites|length == editableSites|length %}
+                        <option value="*"{% if widget.siteId=='*' %} selected{% endif %}>{{ 'All'|t('site') }}</option>
+                    {% endif %}
+                    {% for site in editableSites %}
+                        <option value="{{ site.id }}"{% if site.id == widget.siteId %} selected{% endif %}>{{ site.name|t('site') }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+        {% endset %}
+
+        {{ forms.field({
+            id: 'site-id',
+            label: "Site"|t('app')
+        }, siteInput) }}
+    {% endif %}
+
+    {% set display = "none" %}
+    {% if showAllCalendars %}
+        {% set display = "block" %}
+    {% endif %}
+
+    {% include 'counter/_components/widgets/_includes/_calendarField' %}
+
+    {% set rangeInput %}
+        <div class="select">
+            <select id="dateRange" name="dateRange">
+                <option value="thisHour"{% if widget.dateRange=='thisHour' %} selected{% endif %}>{{ 'This hour'|t('counter') }}</option>
+                <option value="previousHour"{% if widget.dateRange=='previousHour' %} selected{% endif %}>{{ 'Previous hour'|t('counter') }}</option>
+                <option value="today"{% if widget.dateRange=='today' %} selected{% endif %}>{{ 'Today'|t('counter') }}</option>
+                <option value="yesterday"{% if widget.dateRange=='yesterday' %} selected{% endif %}>{{ 'Yesterday'|t('counter') }}</option>
+            </select>
+        </div>
+    {% endset %}
+
+    {{ forms.field({
+        id: 'rangeInput',
+        label: "Date Range"|t('counter')
+    }, rangeInput) }}
+
+    {{ forms.lightswitchField({
+        label: 'Show chart'|t('counter'),
+        id: 'showChart',
+        name: 'showChart',
+        required: false,
+        value: 1,
+        on: widget.showChart is defined ? widget.showChart, 
+    }) }}
+
+    {% include 'counter/_components/widgets/_includes/_preferredInterval' with { id: namespaceId, widget: widget } %}
+
+    {% set visitorTypeInput %}
+        <div class="select">
+            <select id="visitorType" name="visitorType">
+                <option value="all"{% if widget.visitorType=='all' %} selected{% endif %}>{{ 'Visitors'|t('counter') }}</option>
+                <option value="new"{% if widget.visitorType=='new' %} selected{% endif %}>{{ 'New visitors'|t('counter') }}</option>
+            </select>
+        </div>
+    {% endset %}
+
+    {{ forms.field({
+        id: 'visitorTypeInput',
+        label: "Visitor type on chart"|t('counter'),
+        instructions: "By selecting new visitors, you can view the number of new visitors within selected interval for that day."|t('counter'),
+        tip: "The new visitors value only affects the data on the chart but The total value represents all visitors for the selected date range."|t('counter'),
+    }, visitorTypeInput) }}
+</div>
+
+{#
+    // JS and CSS For cuurent widget 
+#}
+{% css %}
+    {{ widgetId }} div[data-attribute="visitorTypeInput"] {
+        display: none;
+    }
+
+    {{ widgetId }} div[data-attribute="preferredIntervalInput"] {
+        display: none;
+    }
+{% endcss %}
+
+{% js %}
+    if ($('{{ widgetId }} div[data-attribute="showChart"] input').val() == '1') {
+        $('{{ widgetId }} div[data-attribute="visitorTypeInput"]').css('display', 'block');
+        $('{{ widgetId }} div[data-attribute="preferredIntervalInput"]').css('display', 'block');
+    }
+    $('{{ widgetId }} div[data-attribute="showChart"] .lightswitch').on('change', function() {
+        var isEnabled = $(this).find('input').val();
+        if (isEnabled) {
+            $('{{ widgetId }} div[data-attribute="visitorTypeInput"]').css('display', 'block');
+            $('{{ widgetId }} div[data-attribute="preferredIntervalInput"]').css('display', 'block');
+        } else {
+            $('{{ widgetId }} div[data-attribute="visitorTypeInput"]').css('display', 'none');
+            $('{{ widgetId }} div[data-attribute="preferredIntervalInput"]').css('display', 'none');
+        }
+    });
+{% endjs %}
+{% do view.registerAssetBundle("vnali\\counter\\assets\\CounterWidgetSettingsAsset") %}

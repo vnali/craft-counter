@@ -1,0 +1,30 @@
+<div class="counter-widget-stat counter-widget-table-wrapper">
+    <div id="{{ id }}"></div>
+</div>
+{% set tableData = [] %}
+
+{% for decliningPage in decliningPages %}
+    {% set title = decliningPage.page|truncate(50, '...') %}
+    {% set tableData = tableData|merge([{
+        title: title,
+        url: decliningPage.page,
+        current: decliningPage.current,
+        previous: decliningPage.previous,
+        decline: decliningPage.decline,
+    }]) %}
+{% endfor %}
+
+{% js %}
+var columns = [
+    { name: '__slot:title', title: Craft.escapeHtml(Craft.t('counter', 'Page')) },
+    { name: 'current', title: Craft.escapeHtml(Craft.t('counter', 'Current views')) },
+    { name: 'previous', title: Craft.escapeHtml(Craft.t('counter', 'Previous views')) },
+    { name: 'decline', title: Craft.escapeHtml(Craft.t('counter', 'Decline')) },
+];
+
+new Craft.VueAdminTable({
+    columns: columns,
+    container: '#{{ id }}',
+    tableData: {{ tableData|json_encode|raw }}
+});
+{% endjs %}

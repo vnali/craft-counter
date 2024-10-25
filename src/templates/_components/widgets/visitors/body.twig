@@ -1,0 +1,41 @@
+<div class="counter-widget-stat">
+{% apply spaceless %}
+    <strong class="counter-widget-stat-number">{{ number }}</strong><br>
+{% endapply %}
+</div>
+<br>
+{% if widget.showChart is defined and widget.showChart %}
+
+    {% set yLabel= 'Visitors' %}
+    {% if widget.visitorType == 'new' %}
+        {% set yLabel= 'New visitors' %}
+    {% endif %}
+
+    <div>
+        <canvas id="{{ namespaceId }}"></canvas>
+    </div>
+
+    {% js %}
+    var ctx = document.getElementById('{{ namespaceId }}');
+
+    new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: {{ label|raw }},
+            datasets: [{
+                label: Craft.escapeHtml(Craft.t('counter', '{{ yLabel }}')),
+                data: {{ visitorsData }},
+                borderWidth: 1,
+                yAxisID: 'visitors',
+            }]
+        },
+        options: {
+            scales: {
+                'visitors': {
+                    position: 'left',
+                }, 
+            }
+        }
+    });
+    {% endjs %}
+{% endif %}

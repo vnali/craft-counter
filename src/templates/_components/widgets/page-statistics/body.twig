@@ -1,0 +1,14 @@
+<div class="counter-widget-stat">
+{% apply spaceless %}
+<table border="1">
+    <tbody>
+        {% for item, value in pageVisits %}
+        <tr>
+            <td>{{ item }}</td>
+            <td>{{ value }}</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% endapply %}
+</div>

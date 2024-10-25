@@ -1,0 +1,30 @@
+<div class="counter-widget-stat counter-widget-table-wrapper">
+    <div id="{{ id }}"></div>
+</div>
+{% set tableData = [] %}
+
+{% for trendingPage in trendingPages %}
+    {% set title = trendingPage.page|truncate(50, '...') %}
+    {% set tableData = tableData|merge([{
+        title: title,
+        url: trendingPage.page|e,
+        current: trendingPage.current,
+        previous: trendingPage.previous,
+        growth: trendingPage.growth,
+    }]) %}
+{% endfor %}
+
+{% js %}
+var columns = [
+    { name: '__slot:title', title: Craft.escapeHtml(Craft.t('counter', 'Page')) },
+    { name: 'current', title: Craft.escapeHtml(Craft.t('counter', "{{ now }}" )) },
+    { name: 'previous', title: Craft.escapeHtml(Craft.t('counter', "{{ before }}")) },
+    { name: 'growth', title: Craft.escapeHtml(Craft.t('counter', 'Growth')) },
+];
+
+new Craft.VueAdminTable({
+    columns: columns,
+    container: '#{{ id }}',
+    tableData: {{ tableData|json_encode|raw }}
+});
+{% endjs %}

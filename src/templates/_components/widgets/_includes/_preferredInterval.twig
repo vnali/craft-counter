@@ -1,0 +1,15 @@
+{% import "_includes/forms" as forms %}
+{% set preferredIntervalInput %}
+    <div class="select">
+        <select id="preferredInterval" name="preferredInterval">
+            <option value="15minutes"{% if widget.preferredInterval=='15minutes' %} selected{% endif %}>{{ '15 minutes'|t('counter') }}</option>
+            <option value="30minutes"{% if widget.preferredInterval=='30minutes' %} selected{% endif %}>{{ '30 minutes'|t('counter') }}</option>
+            <option value="hourly"{% if widget.preferredInterval=='hourly' %} selected{% endif %}>{{ 'Hourly'|t('counter') }}</option>
+        </select>
+    </div>
+{% endset %}
+
+{{ forms.field({
+    id: 'preferredIntervalInput',
+    label: 'Interval on chart'|t('counter'),
+}, preferredIntervalInput) }}

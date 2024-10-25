@@ -1,0 +1,16 @@
+{% import "_includes/forms" as forms %}
+
+<div style="display:{{ display }}">
+    {% set calendarInput %}
+        <div class="select">
+            <select id="calendar" name="calendar">
+                <option value="gregorian" {% if widget.calendar=='gregorian' %} selected {% endif %}>{{ 'Gregorian'|t('counter') }}</option>
+            </select>
+        </div>
+    {% endset %}
+
+    {{ forms.field({
+        id: 'calendar',
+        label: "Calendar"|t('counter')
+    }, calendarInput) }}
+</div>
