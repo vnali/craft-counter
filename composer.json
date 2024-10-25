@@ -2,7 +2,7 @@
   "name": "vnali/craft-counter",
   "description": "Site and page statistics for your website.",
   "type": "craft-plugin",
-  "version": "1.0.0-alpha.1",
+  "version": "1.0.0-alpha.2",
   "license": "proprietary",
   "keywords": ["counter", "visits", "visitors", "online", "statistics", "analytics"],
   "support": {
