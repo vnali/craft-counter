@@ -8,7 +8,7 @@
 - Provide statistics widgets.
 
 ## Documentation
-Please visit the [Documentation page](https://github.com/vnali/counter-docs/blob/main/README.md).
+Please visit the [Documentation page](https://github.com/vnali/craft-counter-docs/blob/main/README.md).
 
 ## License
 This is a commercial plugin available on [Craft CMS plugin store](https://plugins.craftcms.com).
