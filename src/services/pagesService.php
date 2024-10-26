@@ -60,7 +60,7 @@ class pagesService extends Component
             $siteSettings = json_decode($settings->siteSettings, true);
             $siteService = Craft::$app->sites;
             $site = $siteService->getSiteById($siteId);
-            $siteUnique = $site->handle . $site->id;
+            $siteUnique = $site->uid;
             if (isset($site)) {
                 if ($siteSettings[$siteUnique]['calendar']) {
                     $calendarSystem = $siteSettings[$siteUnique]['calendar'];
@@ -364,7 +364,7 @@ class pagesService extends Component
         $pageVisitsQuery = PageVisitsRecord::find();
         $notAllowedSiteIds = [];
         foreach ($sites as $key => $site) {
-            $siteUnique = $site->handle . $site->id;
+            $siteUnique = $site->uid;
             if (isset($siteSettings[$siteUnique]['calendar']) && $siteSettings[$siteUnique]['calendar']) {
                 $calendarSystem = $siteSettings[$siteUnique]['calendar'];
                 $calendarSystems[$site->id] = $calendarSystem;
@@ -615,7 +615,7 @@ class pagesService extends Component
         $notAllowedSiteIds = [];
         $calendarSystems = [];
         foreach ($sites as $site) {
-            $siteUnique = $site->handle . $site->id;
+            $siteUnique = $site->uid;
             if (isset($siteSettings[$siteUnique]['calendar'])) {
                 $calendarSystem = $siteSettings[$siteUnique]['calendar'];
                 $calendarSystems[$site->id] = $calendarSystem;

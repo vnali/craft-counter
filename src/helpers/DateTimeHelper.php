@@ -360,7 +360,7 @@ class DateTimeHelper
         $pluginSettings = Counter::$plugin->getSettings();
         /** @var Settings $pluginSettings */
         $siteSettings = json_decode($pluginSettings->siteSettings, true);
-        $siteUnique = $site->handle . $siteId;
+        $siteUnique = $site->uid;
 
         if (isset($site) && isset($siteSettings[$siteUnique]['weekStartDay'])) {
             return (int)$siteSettings[$siteUnique]['weekStartDay'];

@@ -265,7 +265,7 @@ class counterService extends Component
         $siteSettings = json_decode($pluginSettings->siteSettings, true);
         $enabledCounter = false;
         $calendarSystem = null;
-        $siteUnique = $currentSite->handle . $siteId;
+        $siteUnique = $currentSite->uid;
 
         if (isset($siteSettings[$siteUnique]['calendar'])) {
             $calendarSystem = $siteSettings[$siteUnique]['calendar'];

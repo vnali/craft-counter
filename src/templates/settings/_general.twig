@@ -179,23 +179,23 @@
             <div class="grid-item item11">
                 {% set fieldRows = [] %}
                 {% for site in craft.app.sites.getAllSites() %}
-                    {% set siteSetting = siteSettings[site.handle ~ site.id] ?? null %}
+                    {% set siteSetting = siteSettings[site.uid] ?? null %}
                     {% set fieldRows = fieldRows|merge({
-                        (site.handle ~ site.id): {
+                        (site.uid): {
                             heading: site.name|t('site'),
                             enabledCounter: include('_includes/forms/lightswitch', {
-                                name: 'siteSettingFields['~site.handle~site.id~'][enabledCounter]',
+                                name: 'siteSettingFields['~site.uid~'][enabledCounter]',
                                 on: siteSetting ? siteSetting.enabledCounter,
                                 small: true
                             }),
                             calendar: include('_includes/forms/select', {
-                                name: 'siteSettingFields['~site.handle~site.id~'][calendar]',
+                                name: 'siteSettingFields['~site.uid~'][calendar]',
                                 options: calendars,
                                 id: 'calendar'~loop.index,
                                 value: siteSetting ? siteSetting.calendar,
                             }),
                             weekStartDay: include('_includes/forms/select', {
-                                name: 'siteSettingFields['~site.handle~site.id~'][weekStartDay]',
+                                name: 'siteSettingFields['~site.uid~'][weekStartDay]',
                                 options: days,
                                 value: siteSetting ? siteSetting.weekStartDay,
                             })

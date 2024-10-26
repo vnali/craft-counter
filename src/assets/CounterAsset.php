@@ -31,9 +31,7 @@ class CounterAsset extends AssetBundle
         $sitesService = Craft::$app->getSites();
         $currentSite = $sitesService->getCurrentSite();
         $enabledCounter = false;
-        $siteHandle = $currentSite->handle;
-        $siteId = $currentSite->id;
-        $siteUnique = $siteHandle . $siteId;
+        $siteUnique = $currentSite->uid;
 
         if (isset($siteSettings[$siteUnique]['enabledCounter'])) {
             $enabledCounter = $siteSettings[$siteUnique]['enabledCounter'];

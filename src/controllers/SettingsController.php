@@ -136,9 +136,7 @@ class SettingsController extends Controller
         $siteFields = $this->request->getBodyParam('siteSettingFields');
 
         foreach (Craft::$app->getSites()->getAllSites() as $site) {
-            $siteHandle = $site->handle;
-            $siteId = $site->id;
-            $siteUnique = $siteHandle . $siteId;
+            $siteUnique = $site->uid;
             $mapping = [];
 
             if (isset($siteFields[$siteUnique])) {
