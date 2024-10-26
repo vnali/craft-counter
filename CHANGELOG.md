@@ -1,6 +1,6 @@
 # Release Notes for Counter plugin for Craft 5
 
-## Unreleased
+## 1.0.0-alpha.3 - 2024-10-26
 
 > {tip} If you are upgrading from a prior version, you should set the plugin site settings again after the upgrade.
 
