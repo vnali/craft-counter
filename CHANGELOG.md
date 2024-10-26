@@ -5,6 +5,7 @@
 > {tip} If you are upgrading from a prior version, you should set the plugin site settings again after the upgrade.
 
 - Fixed a bug where site settings in project settings did not apply correctly to other environments.
+- Fixed a SQL error on next visited pages widget.
 
 ## 1.0.0-alpha.2 - 2024-10-25
 
