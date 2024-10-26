@@ -49,7 +49,7 @@ class NextVisitedPages extends Date
         // No next page or next page not in time threshold
         $subQuery = (new Query())
             ->select(new Expression('MIN(t3.id)'))
-            ->from('craft_counter_visitors t3')
+            ->from('{{%counter_visitors}} t3')
             ->where('t1.visitor = t3.visitor')
             ->andWhere('t1.id < t3.id')
             ->andWhere(['t3.skip' => false]);
@@ -60,8 +60,8 @@ class NextVisitedPages extends Date
                 't2.page AS next_page',
                 't2.dateCreated AS next_visit_time',
             ])
-            ->from('craft_counter_visitors t1')
-            ->leftJoin('craft_counter_visitors t2', 't1.visitor = t2.visitor and t2.skip=false and t2.id = (' . $subQuery->createCommand()->getRawSql() . ')')
+            ->from('{{%counter_visitors}} t1')
+            ->leftJoin('{{%counter_visitors}} t2', 't1.visitor = t2.visitor and t2.skip=false and t2.id = (' . $subQuery->createCommand()->getRawSql() . ')')
             ->andWhere(['t1.page' => $page])
             ->andWhere(['t1.skip' => false]);
 
@@ -92,7 +92,7 @@ class NextVisitedPages extends Date
         // next page visited by user in threshold
         $subQuery = (new Query())
             ->select(new Expression('MIN(t3.id)'))
-            ->from('craft_counter_visitors t3')
+            ->from('{{%counter_visitors}} t3')
             ->where('t1.visitor = t3.visitor')
             ->andWhere('t1.id < t3.id')
             ->andWhere(['t3.skip' => false]);
@@ -102,8 +102,8 @@ class NextVisitedPages extends Date
                 't2.page AS next_page',
                 'COUNT(*) AS next_page_count',
             ])
-            ->from('craft_counter_visitors t1')
-            ->innerJoin('craft_counter_visitors t2', 't1.visitor = t2.visitor and t2.skip=false')
+            ->from('{{%counter_visitors}} t1')
+            ->innerJoin('{{%counter_visitors}} t2', 't1.visitor = t2.visitor and t2.skip=false')
             ->andWhere(['t1.page' => $page])
             ->andWhere(['t1.skip' => false])
             ->andWhere(new Expression('t2.id = (' . $subQuery->createCommand()->getRawSql() . ')'));
