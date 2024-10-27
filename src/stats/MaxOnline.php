@@ -77,32 +77,30 @@ class MaxOnline extends Date
                     $visitors = $data[$dateKey]['visitors'];
                 }
 
-                $data[$dateKey]['visitors'] = $visitors + $row['newVisitors'];
-            /*
-            if ($interval == 'H') {
-                if (!isset($data[$dateKey]['visitors'])) {
-                    $date1 = clone $startDate;
-                    $date1->setTime((int) $dateKey, 0, 0);
-                    $date2 = clone $startDate;
-                    $date2->setTime((int) $dateKey, 59, 59);
-                    $query = (new Query())
-                        ->from('{{%counter_visitors}}' . ' visitors')
-                        ->andWhere(['>=', 'dateCreated',  Db::prepareDateForDb($date1)])
-                        ->andWhere(['<=', 'dateCreated', Db::prepareDateForDb($date2)])
-                        ->andWhere(['skip' => false]);
-                    $query->select(['visitor']);
+                // If the interval is H (date range is today, custom for one day), we can't calculate hourly visitors based on newVisitors
+                if ($interval == 'H') {
+                    if (!isset($data[$dateKey]['visitors'])) {
+                        $date1 = clone $startDate;
+                        $date1->setTime((int) $dateKey, 0, 0);
+                        $date2 = clone $startDate;
+                        $date2->setTime((int) $dateKey, 59, 59);
+                        $query = (new Query())
+                            ->from('{{%counter_visitors}}' . ' visitors')
+                            ->andWhere(['>=', 'dateCreated',  Db::prepareDateForDb($date1)])
+                            ->andWhere(['<=', 'dateCreated', Db::prepareDateForDb($date2)])
+                            ->andWhere(['skip' => false]);
+                        $query->select(['visitor']);
 
-                    if ($this->siteId && $this->siteId != '*') {
-                        $query->andWhere(['siteId' => $this->siteId]);
+                        if ($this->siteId && $this->siteId != '*') {
+                            $query->andWhere(['siteId' => $this->siteId]);
+                        }
+                        $column = $query->column();
+                        $count = (int)count(array_unique($column));
+                        $data[$dateKey]['visitors'] = (int) $count;
                     }
-                    $column = $query->column();
-                    $count = (int)count(array_unique($column));
-                    $data[$dateKey]['visitors'] = (int) $count;
+                } else {
+                    $data[$dateKey]['visitors'] = $visitors + $row['newVisitors'];
                 }
-            } else {
-                $data[$dateKey]['visitors'] = $visitors + $row['newVisitors'];
-            }
-            */
             } else {
                 // we do not need visitors data but set a null value for later process
                 $data[$dateKey]['visitors'] = 0;
