@@ -1,8 +1,8 @@
 # Release Notes for Counter plugin for Craft 5
 
-## Unreleased
+## 1.0.0-alpha.4 - 2024-10-27
 
-- Fixed a bug where the visitor data on the max online widget was calculated incorrectly.
+- Fixed a bug where the visitor data on the maximum online users widget was calculated incorrectly.
 
 ## 1.0.0-alpha.3 - 2024-10-26
 
