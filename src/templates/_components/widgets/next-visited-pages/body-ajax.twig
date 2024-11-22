@@ -63,12 +63,13 @@ if (typeof fetchDataNextVisitedPages !== 'function') {
         });
     }
 }
-
+/*
 {% if widget.autoRefreshWidget %}
     counterIntervals['{{namespaceId}}'] = setInterval(() => {
         fetchDataNextVisitedPages('{{ widget.id }}', '{{namespaceId}}');
     }, {{ widget.autoRefreshWidget }});
 {% endif %}
+*/
 
 $(document).ready(function () {
     fetchDataNextVisitedPages('{{ widget.id }}', '{{namespaceId}}');

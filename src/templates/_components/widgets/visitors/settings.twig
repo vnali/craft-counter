@@ -126,6 +126,7 @@
             $('{{ widgetId }} div[data-attribute="preferredIntervalInput"]').css('display', 'none');
         }
     });
+    /*
     if ($('{{ widgetId }} div[data-attribute="useAjax"] input').val() == '1') {
         $('{{ widgetId }} div[data-attribute="autoRefreshWidget"]').css('display', 'block');
     }
@@ -137,6 +138,7 @@
             $('{{ widgetId }} div[data-attribute="autoRefreshWidget"]').css('display', 'none');
         }
     });
+    */
 {% endjs %}
 
 {% do view.registerAssetBundle("vnali\\counter\\assets\\CounterWidgetSettingsAsset") %}

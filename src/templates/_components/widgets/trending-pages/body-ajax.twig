@@ -40,11 +40,13 @@ if (typeof fetchTrendingPages !== 'function') {
     }
 }
 
+/*
 {% if widget.autoRefreshWidget %}
     counterIntervals['{{namespaceId}}'] = setInterval(() => {
         fetchTrendingPages('{{ widget.id }}', '{{namespaceId}}');
     }, {{ widget.autoRefreshWidget }});
 {% endif %}
+*/
 
 $(document).ready(function () {
     fetchTrendingPages('{{ widget.id }}', '{{namespaceId}}');

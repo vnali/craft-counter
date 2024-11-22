@@ -40,11 +40,13 @@ if (typeof fetchTopPages !== 'function') {
     }
 }
 
+/*
 {% if widget.autoRefreshWidget %}
     counterIntervals['{{namespaceId}}'] = setInterval(() => {
         fetchTopPages('{{ widget.id }}', '{{namespaceId}}');
     }, {{ widget.autoRefreshWidget }});
 {% endif %}
+*/
 
 $(document).ready(function () {
     fetchTopPages('{{ widget.id }}', '{{namespaceId}}');

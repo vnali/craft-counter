@@ -109,9 +109,7 @@
         $('{{ widgetId }} div[data-attribute="showVisitor"]').css('display', 'block');
         $('{{ widgetId }} div[data-attribute=preferredIntervalInput]').css('display', 'block');
     }
-    if ($('{{ widgetId }} div[data-attribute="useAjax"] input').val() == '1') {
-        $('{{ widgetId }} div[data-attribute="autoRefreshWidget"]').css('display', 'block');
-    }
+
     $('{{ widgetId }} div[data-attribute="showChart"] .lightswitch').on('change', function() {
         var isEnabled = $(this).find('input').val();
         if (isEnabled) {
@@ -124,6 +122,11 @@
         }
     });
 
+    /*
+    if ($('{{ widgetId }} div[data-attribute="useAjax"] input').val() == '1') {
+        $('{{ widgetId }} div[data-attribute="autoRefreshWidget"]').css('display', 'block');
+    }
+
     $('{{ widgetId }} div[data-attribute="useAjax"] .lightswitch').on('change', function() {
         var isEnabled = $(this).find('input').val();
         if (isEnabled) {
@@ -132,6 +135,7 @@
             $('{{ widgetId }} div[data-attribute="autoRefreshWidget"]').css('display', 'none');
         }
     });
+    */
 {% endjs %}
 {#
     // JS and CSS For on fly widget creation

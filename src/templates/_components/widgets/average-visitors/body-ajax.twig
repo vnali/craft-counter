@@ -83,11 +83,13 @@ if (typeof fetchDataAverageVisitors !== 'function') {
     }
 }
 
+/*
 {% if widget.autoRefreshWidget %}
     counterIntervals['{{namespaceId}}'] = setInterval(() => {
         fetchDataAverageVisitors('{{ widget.id }}', '{{namespaceId}}', '{{ widget.showChart }}');
     }, {{ widget.autoRefreshWidget }});
 {% endif %}
+*/
 
 $(document).ready(function () {
     fetchDataAverageVisitors('{{ widget.id }}', '{{namespaceId}}', '{{ widget.showChart }}');

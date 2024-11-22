@@ -106,6 +106,7 @@ if (typeof fetchDataVisitsRecent !== 'function') {
     }
 }
 
+/*
 {% if widget.autoRefreshWidget %}
     if ('{{ widget.dateRange }}' != 'previousHour' && '{{ widget.dateRange }}' != 'yesterday') {
         counterIntervals['{{namespaceId}}'] = setInterval(() => {
@@ -113,6 +114,7 @@ if (typeof fetchDataVisitsRecent !== 'function') {
         }, {{ widget.autoRefreshWidget }});
     }
 {% endif %}
+*/
 
 $(document).ready(function () {
     fetchDataVisitsRecent('{{ widget.id }}', '{{ widget.showChart }}', '{{ widget.showVisitor }}', '{{namespaceId}}');

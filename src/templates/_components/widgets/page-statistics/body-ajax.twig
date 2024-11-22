@@ -42,11 +42,13 @@ if (typeof fetchPageStatistics !== 'function') {
     }
 }
 
+/*
 {% if widget.autoRefreshWidget %}
     counterIntervals['{{namespaceId}}'] = setInterval(() => {
         fetchPageStatistics('{{ widget.id }}', '{{namespaceId}}');
     }, {{ widget.autoRefreshWidget }});
 {% endif %}
+*/
 
 $(document).ready(function () {
     fetchPageStatistics('{{ widget.id }}', '{{namespaceId}}');

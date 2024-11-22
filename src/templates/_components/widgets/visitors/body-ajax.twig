@@ -85,11 +85,13 @@ if (typeof fetchDataVisitors !== 'function') {
     }
 }
 
+/*
 {% if widget.autoRefreshWidget %}
     counterIntervals['{{namespaceId}}'] = setInterval(() => {
         fetchDataVisitors('{{ widget.id }}', '{{ widget.showChart }}', '{{namespaceId}}', '{{ yLabel }}');
     }, {{ widget.autoRefreshWidget }});
 {% endif %}
+*/
 
 $(document).ready(function () {
     fetchDataVisitors('{{ widget.id }}', '{{ widget.showChart }}', '{{namespaceId}}', '{{ yLabel }}');

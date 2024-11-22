@@ -34,11 +34,13 @@ if (typeof fetchDataOnline !== 'function') {
     }
 }
 
+/*
 {% if widget.autoRefreshWidget %}
     window.counterIntervals['{{namespaceId}}'] = setInterval(() => {
         fetchDataOnline('{{ widget.id }}', '{{namespaceId}}');
     }, {{ widget.autoRefreshWidget }});
 {% endif %}
+*/
 
 $(document).ready(function () {
     fetchDataOnline('{{ widget.id }}', '{{namespaceId}}');

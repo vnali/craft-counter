@@ -107,11 +107,13 @@ if (typeof fetchDataVisits !== 'function') {
     }
 }
 
+/*
 {% if widget.autoRefreshWidget %}
     counterIntervals['{{namespaceId}}'] = setInterval(() => {
         fetchDataVisits('{{ widget.id }}', '{{ widget.showChart }}', '{{ widget.showVisitor }}', '{{namespaceId}}');
     }, {{ widget.autoRefreshWidget }});
 {% endif %}
+*/
 
 $(document).ready(function () {
     fetchDataVisits('{{ widget.id }}', '{{ widget.showChart }}', '{{ widget.showVisitor }}', '{{namespaceId}}');
