@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+> {tip} Please read [this announcement](https://github.com/vnali/craft-counter/discussions/1) before update.
+
 - Counter widgets can now load from the cache.
 - Counter widgets can now load after the page has loaded.
 - The date ranges for the next visited pages widget are now limited to smaller ranges.
