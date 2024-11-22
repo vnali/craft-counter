@@ -10,6 +10,7 @@ interface DateInterface
     public const DATE_RANGE_THISHOUR = 'thisHour';
     public const DATE_RANGE_PREVIOUSHOUR = 'previousHour';
     public const DATE_RANGE_TODAY = 'today';
+    public const DATE_RANGE_TODAYPRIORTOTHISHOUR = 'todayPriorToThisHour';
     public const DATE_RANGE_YESTERDAY = 'yesterday';
     public const DATE_RANGE_THISWEEK = 'thisWeek';
     public const DATE_RANGE_THISMONTH = 'thisMonth';

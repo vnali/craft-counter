@@ -121,6 +121,9 @@ abstract class Date implements DateInterface
             case self::DATE_RANGE_TODAY: {
                     return Craft::t('counter', 'Today');
                 }
+            case self::DATE_RANGE_TODAYPRIORTOTHISHOUR: {
+                return Craft::t('counter', 'Today (prior to this hour)');
+            }
             case self::DATE_RANGE_THISWEEK: {
                     return Craft::t('counter', 'This week');
                 }
@@ -207,6 +210,10 @@ abstract class Date implements DateInterface
                     $date = new DateTime();
                     break;
                 }
+            case self::DATE_RANGE_TODAYPRIORTOTHISHOUR: {
+                $date = new DateTime();
+                break;
+            }
             case self::DATE_RANGE_THISMONTH: {
                     $calendar = IntlCalendar::createInstance(null, $this->locale . '@calendar=' . $this->calendar);
                     $currentYear = $calendar->get(IntlCalendar::FIELD_YEAR);
@@ -291,7 +298,7 @@ abstract class Date implements DateInterface
         if ($dateRange == self::DATE_RANGE_THISHOUR || $dateRange == self::DATE_RANGE_TODAY) {
             $hour = $date->format('H');
             $date->setTime((int)$hour, 59, 59);
-        } elseif ($dateRange == self::DATE_RANGE_PREVIOUSHOUR) {
+        } elseif ($dateRange == self::DATE_RANGE_PREVIOUSHOUR || $dateRange == self::DATE_RANGE_TODAYPRIORTOTHISHOUR) {
             $date->modify('-1 hour');
             $hour = $date->format('H');
             $date->setTime((int)$hour, 59, 59);
@@ -307,7 +314,7 @@ abstract class Date implements DateInterface
     protected function _baseData(): array
     {
         // Make sure the end time is always the last point on that day.
-        if ($this->_endDate instanceof DateTime && $this->dateRange != self::DATE_RANGE_THISHOUR && $this->dateRange != self::DATE_RANGE_PREVIOUSHOUR && $this->dateRange != self::DATE_RANGE_TODAY) {
+        if ($this->_endDate instanceof DateTime && $this->dateRange != self::DATE_RANGE_THISHOUR && $this->dateRange != self::DATE_RANGE_PREVIOUSHOUR && $this->dateRange != self::DATE_RANGE_TODAY && $this->dateRange != self::DATE_RANGE_TODAYPRIORTOTHISHOUR) {
             $this->_endDate->setTime(23, 59, 59);
         }
 

@@ -105,6 +105,7 @@ class Install extends Migration
             $this->createIndex(null, '{{%counter_visitors}}', ['dateCreated'], false);
             $this->createIndex(null, '{{%counter_visitors}}', ['dateCreated', 'siteId'], false);
             $this->createIndex(null, '{{%counter_visitors}}', ['skip'], false);
+            $this->createIndex(null, '{{%counter_visitors}}', ['visitor', 'skip'], false);
             $this->addForeignKey(null, '{{%counter_visitors}}', ['siteId'], '{{%sites}}', ['id'], 'CASCADE', 'CASCADE');
         }
 

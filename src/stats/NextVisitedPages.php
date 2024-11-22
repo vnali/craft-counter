@@ -46,48 +46,22 @@ class NextVisitedPages extends Date
         }
         $page = $pageRecord->page;
 
-        // No next page or next page not in time threshold
-        $subQuery = (new Query())
-            ->select(new Expression('MIN(t3.id)'))
-            ->from('{{%counter_visitors}} t3')
-            ->where('t1.visitor = t3.visitor')
-            ->andWhere('t1.id < t3.id')
-            ->andWhere(['t3.skip' => false]);
-
-        // Create the main query
+        // Calculate all visits for the page
         $query = (new Query())
             ->select([
-                't2.page AS next_page',
-                't2.dateCreated AS next_visit_time',
+                'count(*)',
             ])
             ->from('{{%counter_visitors}} t1')
-            ->leftJoin('{{%counter_visitors}} t2', 't1.visitor = t2.visitor and t2.skip=false and t2.id = (' . $subQuery->createCommand()->getRawSql() . ')')
             ->andWhere(['t1.page' => $page])
             ->andWhere(['t1.skip' => false]);
-
         if (Craft::$app->getDb()->getIsPgsql()) {
-            $query->andWhere([
-                'or',
-                ['t2.page' => null],
-                new \yii\db\Expression('EXTRACT(EPOCH FROM t2."dateCreated" - t1."dateCreated") > :difference', [
-                    ':difference' => $this->difference,
-                ]),
-            ])
-            ->andWhere(['>=', 't1."dateCreated"',  Db::prepareDateForDb($startDate)])
-            ->andWhere(['<=', 't1."dateCreated"', Db::prepareDateForDb($endDate)]);
+            $query->andWhere(['>=', 't1."dateCreated"',  Db::prepareDateForDb($startDate)])
+                ->andWhere(['<=', 't1."dateCreated"', Db::prepareDateForDb($endDate)]);
         } else {
-            $where = ['<', 't1.dateCreated', new \yii\db\Expression('t2.dateCreated - INTERVAL :difference SECOND', [
-                ':difference' => $this->difference,
-            ])];
-            $query->andWhere([
-                'or',
-                ['t2.page' => null],
-                $where,
-            ])
-            ->andWhere(['>=', 't1.dateCreated',  Db::prepareDateForDb($startDate)])
-            ->andWhere(['<=', 't1.dateCreated', Db::prepareDateForDb($endDate)]);
+            $query->andWhere(['>=', 't1.dateCreated',  Db::prepareDateForDb($startDate)])
+                ->andWhere(['<=', 't1.dateCreated', Db::prepareDateForDb($endDate)]);
         }
-        $results1 = $query->all();
+        $resultsAll = $query->scalar();
 
         // next page visited by user in threshold
         $subQuery = (new Query())
@@ -124,22 +98,28 @@ class NextVisitedPages extends Date
         $results2 = $query->all();
 
         $parts = [];
-        if (count($results1)) {
-            $parts[htmlspecialchars(craft::t('counter', 'No next visits'))] = (count($results1));
-        }
+        
         $count = 0;
-
+        $nextVisited = 0;
         foreach ($results2 as $result2) {
             if ($this->nextPagesLimit === null || $count < $this->nextPagesLimit) {
                 $count++;
                 $parts[$result2['next_page']] = $result2['next_page_count'];
+                $nextVisited = $nextVisited + $result2['next_page_count'];
             } else {
                 if (!isset($parts[htmlspecialchars(craft::t('counter', 'Other'))])) {
                     $parts[htmlspecialchars(craft::t('counter', 'Other'))] = 0;
                 }
                 $parts[htmlspecialchars(craft::t('counter', 'Other'))] = $parts[htmlspecialchars(craft::t('counter', 'Other'))] + $result2['next_page_count'];
+                $nextVisited = $nextVisited + $result2['next_page_count'];
             }
         }
+
+        $notVisited = $resultsAll - $nextVisited;
+        if ($notVisited) {
+            $parts[htmlspecialchars(craft::t('counter', 'No next visits'))] = $notVisited;
+        }
+
         arsort($parts);
 
         return $parts;
