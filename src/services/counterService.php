@@ -210,7 +210,7 @@ class counterService extends Component
         $tz = Craft::$app->getTimeZone();
         $tzTime = new DateTimeZone($tz);
         $now = new DateTime('now', new \DateTimeZone("UTC"));
-
+        $formattedNow = $now->format('Y-m-d H:i:s');
         // Currently we should keep visitors forever
         // TODO: allow to keep for less seconds?
         if (($pluginSettings->keepVisitorsInSeconds != -1)) {
@@ -367,7 +367,8 @@ class counterService extends Component
         $query = VisitorsRecord::find()
             ->where(['visitor' => $hashedIP, 'siteId' => $siteId])
             ->andWhere(['skip' => false])
-            ->orderBy('dateCreated desc');
+            ->andWhere(['<=', 'dateCreated', $formattedNow]) // don't allow fetch from next record of counter table
+            ->orderBy('id desc');
         $visitorsRecord = $query->one();
         if ($visitorsRecord) {
             /** @var VisitorsRecord $visitorsRecord */
@@ -413,12 +414,12 @@ class counterService extends Component
             // Get online users for all sites
             if (Craft::$app->getDb()->getIsPgsql()) {
                 $where = new \yii\db\Expression('EXTRACT(EPOCH FROM (:now - "dateCreated")) <= :difference', [
-                    ':now' => $now->format('Y-m-d H:i:s'),
+                    ':now' => $formattedNow,
                     ':difference' => $pluginSettings->onlineThreshold,
                 ]);
             } else {
                 $where = ['>=', 'dateCreated', new \yii\db\Expression(':now - INTERVAL :difference SECOND', [
-                    ':now' => $now->format('Y-m-d H:i:s'),
+                    ':now' => $formattedNow,
                     ':difference' => $pluginSettings->onlineThreshold,
                 ])];
             }
@@ -436,12 +437,12 @@ class counterService extends Component
             // Get online users for the site
             if (Craft::$app->getDb()->getIsPgsql()) {
                 $where = new \yii\db\Expression('EXTRACT(EPOCH FROM (:now - "dateCreated")) <= :difference', [
-                    ':now' => $now->format('Y-m-d H:i:s'),
+                    ':now' => $formattedNow,
                     ':difference' => $pluginSettings->onlineThreshold,
                 ]);
             } else {
                 $where = ['>=', 'dateCreated', new \yii\db\Expression(':now - INTERVAL :difference SECOND', [
-                    ':now' => $now->format('Y-m-d H:i:s'),
+                    ':now' => $formattedNow,
                     ':difference' => $pluginSettings->onlineThreshold,
                 ])];
             }
@@ -461,7 +462,7 @@ class counterService extends Component
             $visitorRecord = new VisitorsRecord();
             $visitorRecord->visitor = $hashedIP;
             $visitorRecord->siteId = $siteId;
-            $visitorRecord->dateCreated = $now;
+            $visitorRecord->dateCreated = $formattedNow;
             $visitorRecord->page = $pageUrl;
             $visitorRecord->skip = false;
             $visitorRecord->save();
@@ -469,340 +470,366 @@ class counterService extends Component
             $visitorRecord = new VisitorsRecord();
             $visitorRecord->visitor = $hashedIP;
             $visitorRecord->siteId = $siteId;
-            $visitorRecord->dateCreated = $now;
+            $visitorRecord->dateCreated = $formattedNow;
             $visitorRecord->page = $pageUrl;
             $visitorRecord->skip = true;
             $visitorRecord->save();
         }
 
         // Log visitor for all sites
-        $counterRecord = CounterRecord::find()->where(['year' => $year, 'month' => $month, 'day' => $day, 'hour' => $hour, 'quarter' => $quarter, 'siteId' => null])->one();
-        /** @var CounterRecord|null $counterRecord */
-        if ($counterRecord) {
-            if ($counterRecord->maxOnline < $onlineCounterAllSites) {
-                $counterRecord->maxOnline = $onlineCounterAllSites;
-                $counterRecord->maxOnlineDate = $now;
-            }
-            if (!$ignoreVisit) {
-                $counterRecord->visits = new \yii\db\Expression('visits + 1');
-            }
-            if (!$ignoreVisitorInD) {
-                $formattedDate = $now->format('Y-m-d H:i:s');
-                $today = DateTimeHelper::today();
-                $today->setTimezone(new DateTimeZone('UTC'));
-                // check if visitor is new for all sites
-                $visitorQuery = VisitorsRecord::find()
-                    ->andWhere(['<=', 'dateCreated', $formattedDate])
-                    ->andWhere(['>=', 'dateCreated', $today->format('Y-m-d H:i:s')])
-                    ->andWhere(['visitor' => $hashedIP])
-                    ->andWhere(['skip' => false]);
-                if (isset($visitorRecord->id)) {
-                    $visitorQuery->andWhere(['!=', 'id', $visitorRecord->id]);
+        // Acquire the mutex
+        $mutex = Craft::$app->mutex;
+        $mutexKey = 'counter_table_log_all_sites'; // Unique key for the mutex
+        $mutexTimeout = 1;
+        if ($mutex->acquire($mutexKey, $mutexTimeout)) {
+            $counterRecord = CounterRecord::find()->where(['year' => $year, 'month' => $month, 'day' => $day, 'hour' => $hour, 'quarter' => $quarter, 'siteId' => null])->orderBy(['id' => SORT_ASC])->one();
+            /** @var CounterRecord|null $counterRecord */
+            if ($counterRecord) {
+                if ($counterRecord->maxOnline < $onlineCounterAllSites) {
+                    $counterRecord->maxOnline = $onlineCounterAllSites;
+                    $counterRecord->maxOnlineDate = $formattedNow;
                 }
-                if (!$visitorQuery->one()) {
+                if (!$ignoreVisit) {
+                    $counterRecord->visits = new \yii\db\Expression('visits + 1');
+                }
+                if (!$ignoreVisitorInD) {
+                    $today = DateTimeHelper::today();
+                    $today->setTimezone(new DateTimeZone('UTC'));
+                    // check if visitor is new for all sites
+                    $visitorQuery = VisitorsRecord::find()
+                        ->andWhere(['<=', 'dateCreated', $formattedNow])
+                        ->andWhere(['>=', 'dateCreated', $today->format('Y-m-d H:i:s')])
+                        ->andWhere(['visitor' => $hashedIP])
+                        ->andWhere(['skip' => false]);
+                    if (isset($visitorRecord->id)) {
+                        $visitorQuery->andWhere(['!=', 'id', $visitorRecord->id]);
+                    }
+                    if (!$visitorQuery->one()) {
+                        if (Craft::$app->getDb()->getIsPgsql()) {
+                            $counterRecord->newVisitors = new \yii\db\Expression('"newVisitors" + 1');
+                        } else {
+                            $counterRecord->newVisitors = new \yii\db\Expression('newVisitors + 1');
+                        }
+                    }
+                }
+                if (!$ignoreVisitorInQ) {
+                    $formattedDate2 = $counterRecord->dateCreated;
+                    // check if visitor is new for all sites
+                    $visitorQuery = VisitorsRecord::find()
+                        ->andWhere(['<=', 'dateCreated', $formattedNow])
+                        ->andWhere(['>=', 'dateCreated', $formattedDate2])
+                        ->andWhere(['visitor' => $hashedIP])
+                        ->andWhere(['skip' => false]);
+                    if (isset($visitorRecord->id)) {
+                        $visitorQuery->andWhere(['!=', 'id', $visitorRecord->id]);
+                    }
+                    if (!$visitorQuery->one()) {
+                        $counterRecord->visitors = new \yii\db\Expression('visitors + 1');
+                    }
+                }
+                if (Craft::$app->getDb()->getIsPgsql()) {
+                    $counterRecord->visitsIgnoreInterval = new \yii\db\Expression('"visitsIgnoreInterval" + 1');
+                } else {
+                    $counterRecord->visitsIgnoreInterval = new \yii\db\Expression('visitsIgnoreInterval + 1');
+                }
+                $counterRecord->dateUpdated = $formattedNow;
+                // don't allow automatic change for dateUpdated
+                $counterRecord->markAttributeDirty('dateUpdated');
+                $counterRecord->update();
+            } else {
+                $counterRecord = new CounterRecord();
+                $counterRecord->year = (int)$year;
+                $counterRecord->month = (int)$month;
+                $counterRecord->day = (int)$day;
+                $counterRecord->hour = (int)$hour;
+                $counterRecord->quarter = $quarter;
+                if (!$ignoreVisitorInD) {
+                    $today = DateTimeHelper::today();
+                    $today->setTimezone(new DateTimeZone('UTC'));
+                    // check if visitor is new for all sites
+                    $visitorQuery = VisitorsRecord::find()
+                        ->andWhere(['<=', 'dateCreated', $formattedNow])
+                        ->andWhere(['>=', 'dateCreated', $today->format('Y-m-d H:i:s')])
+                        ->andWhere(['visitor' => $hashedIP])
+                        ->andWhere(['skip' => false]);
+                    if (isset($visitorRecord->id)) {
+                        $visitorQuery->andWhere(['!=', 'id', $visitorRecord->id]);
+                    }
+                    if (!$visitorQuery->one()) {
+                        $counterRecord->newVisitors = 1;
+                    }
+                }
+                if (!$ignoreVisitorInQ) {
+                    $counterRecord->visitors = 1;
+                }
+                if (!$ignoreVisit) {
+                    $counterRecord->visits = 1;
+                    $counterRecord->maxOnline = 1;
+                    $counterRecord->maxOnlineDate = $formattedNow;
+                }
+                $counterRecord->visitsIgnoreInterval = 1;
+                $counterRecord->siteId = null;
+                $counterRecord->dateCreated = $formattedNow;
+                $counterRecord->dateUpdated = $formattedNow;
+                $counterRecord->save();
+            }
+            $mutex->release($mutexKey);
+        } else {
+            craft::info('can not acquire lock to log visits in counter record for all sites: ' . $visitorRecord->id);
+        }
+
+        $mutex = Craft::$app->mutex;
+        $mutexKey = 'counter_table_log_site'; // Unique key for the mutex
+        $mutexTimeout = 1;
+        if ($mutex->acquire($mutexKey, $mutexTimeout)) {
+            // Log visitor for visited site
+            $counterRecord = CounterRecord::find()->where(['year' => $year, 'month' => $month, 'day' => $day, 'hour' => $hour, 'quarter' => $quarter, 'siteId' => $siteId])->orderBy(['id' => SORT_ASC])->one();
+            /** @var CounterRecord|null $counterRecord */
+            if ($counterRecord) {
+                if ($counterRecord->maxOnline < $onlineCounter) {
+                    $counterRecord->maxOnline = $onlineCounter;
+                    $counterRecord->maxOnlineDate = $formattedNow;
+                }
+                if (!$ignoreVisit) {
+                    $counterRecord->visits = new \yii\db\Expression('visits + 1');
+                }
+                if (!$ignoreVisitorInD) {
                     if (Craft::$app->getDb()->getIsPgsql()) {
                         $counterRecord->newVisitors = new \yii\db\Expression('"newVisitors" + 1');
                     } else {
                         $counterRecord->newVisitors = new \yii\db\Expression('newVisitors + 1');
                     }
                 }
-            }
-            if (!$ignoreVisitorInQ) {
-                $formattedDate = $now->format('Y-m-d H:i:s');
-                $formattedDate2 = $counterRecord->dateCreated;
-                // check if visitor is new for all sites
-                $visitorQuery = VisitorsRecord::find()
-                    ->andWhere(['<=', 'dateCreated', $formattedDate])
-                    ->andWhere(['>=', 'dateCreated', $formattedDate2])
-                    ->andWhere(['visitor' => $hashedIP])
-                    ->andWhere(['skip' => false]);
-                if (isset($visitorRecord->id)) {
-                    $visitorQuery->andWhere(['!=', 'id', $visitorRecord->id]);
-                }
-                if (!$visitorQuery->one()) {
+                if (!$ignoreVisitorInQ) {
                     $counterRecord->visitors = new \yii\db\Expression('visitors + 1');
                 }
-            }
-            if (Craft::$app->getDb()->getIsPgsql()) {
-                $counterRecord->visitsIgnoreInterval = new \yii\db\Expression('"visitsIgnoreInterval" + 1');
-            } else {
-                $counterRecord->visitsIgnoreInterval = new \yii\db\Expression('visitsIgnoreInterval + 1');
-            }
-            $counterRecord->dateUpdated = $now;
-            $counterRecord->update();
-        } else {
-            $counterRecord = new CounterRecord();
-            $counterRecord->year = (int)$year;
-            $counterRecord->month = (int)$month;
-            $counterRecord->day = (int)$day;
-            $counterRecord->hour = (int)$hour;
-            $counterRecord->quarter = $quarter;
-            if (!$ignoreVisitorInD) {
-                $formattedDate = $now->format('Y-m-d H:i:s');
-                $today = DateTimeHelper::today();
-                $today->setTimezone(new DateTimeZone('UTC'));
-                // check if visitor is new for all sites
-                $visitorQuery = VisitorsRecord::find()
-                    ->andWhere(['<=', 'dateCreated', $formattedDate])
-                    ->andWhere(['>=', 'dateCreated', $today->format('Y-m-d H:i:s')])
-                    ->andWhere(['visitor' => $hashedIP])
-                    ->andWhere(['skip' => false]);
-                if (isset($visitorRecord->id)) {
-                    $visitorQuery->andWhere(['!=', 'id', $visitorRecord->id]);
+                if (Craft::$app->getDb()->getIsPgsql()) {
+                    $counterRecord->visitsIgnoreInterval = new \yii\db\Expression('"visitsIgnoreInterval" + 1');
+                } else {
+                    $counterRecord->visitsIgnoreInterval = new \yii\db\Expression('visitsIgnoreInterval + 1');
                 }
-                if (!$visitorQuery->one()) {
+                $counterRecord->dateUpdated = $formattedNow;
+                // don't allow automatic change for dateUpdated
+                $counterRecord->markAttributeDirty('dateUpdated');
+                $counterRecord->update();
+            } else {
+                $counterRecord = new CounterRecord();
+                $counterRecord->year = (int)$year;
+                $counterRecord->month = (int)$month;
+                $counterRecord->day = (int)$day;
+                $counterRecord->hour = (int)$hour;
+                $counterRecord->quarter = $quarter;
+                if (!$ignoreVisitorInD) {
                     $counterRecord->newVisitors = 1;
                 }
-            }
-            if (!$ignoreVisitorInQ) {
-                $counterRecord->visitors = 1;
-            }
-            if (!$ignoreVisit) {
-                $counterRecord->visits = 1;
-                $counterRecord->maxOnline = 1;
-                $counterRecord->maxOnlineDate = $now;
-            }
-            $counterRecord->visitsIgnoreInterval = 1;
-            $counterRecord->siteId = null;
-            $counterRecord->dateCreated = $now;
-            $counterRecord->dateUpdated = $now;
-            $counterRecord->save();
-        }
-
-        // Log visitor for visited site
-        $counterRecord = CounterRecord::find()->where(['year' => $year, 'month' => $month, 'day' => $day, 'hour' => $hour, 'quarter' => $quarter, 'siteId' => $siteId])->one();
-        /** @var CounterRecord|null $counterRecord */
-        if ($counterRecord) {
-            if ($counterRecord->maxOnline < $onlineCounter) {
-                $counterRecord->maxOnline = $onlineCounter;
-                $counterRecord->maxOnlineDate = $now;
-            }
-            if (!$ignoreVisit) {
-                $counterRecord->visits = new \yii\db\Expression('visits + 1');
-            }
-            if (!$ignoreVisitorInD) {
-                if (Craft::$app->getDb()->getIsPgsql()) {
-                    $counterRecord->newVisitors = new \yii\db\Expression('"newVisitors" + 1');
-                } else {
-                    $counterRecord->newVisitors = new \yii\db\Expression('newVisitors + 1');
+                if (!$ignoreVisitorInQ) {
+                    $counterRecord->visitors = 1;
                 }
+                if (!$ignoreVisit) {
+                    $counterRecord->visits = 1;
+                    $counterRecord->maxOnline = 1;
+                    $counterRecord->maxOnlineDate = $formattedNow;
+                }
+                $counterRecord->visitsIgnoreInterval = 1;
+                $counterRecord->siteId = $siteId;
+                $counterRecord->dateCreated = $formattedNow;
+                $counterRecord->dateUpdated = $formattedNow;
+                $counterRecord->save();
             }
-            if (!$ignoreVisitorInQ) {
-                $counterRecord->visitors = new \yii\db\Expression('visitors + 1');
-            }
-            if (Craft::$app->getDb()->getIsPgsql()) {
-                $counterRecord->visitsIgnoreInterval = new \yii\db\Expression('"visitsIgnoreInterval" + 1');
-            } else {
-                $counterRecord->visitsIgnoreInterval = new \yii\db\Expression('visitsIgnoreInterval + 1');
-            }
-            $counterRecord->dateUpdated = $now;
-            $counterRecord->update();
+            $mutex->release($mutexKey);
         } else {
-            $counterRecord = new CounterRecord();
-            $counterRecord->year = (int)$year;
-            $counterRecord->month = (int)$month;
-            $counterRecord->day = (int)$day;
-            $counterRecord->hour = (int)$hour;
-            $counterRecord->quarter = $quarter;
-            if (!$ignoreVisitorInD) {
-                $counterRecord->newVisitors = 1;
-            }
-            if (!$ignoreVisitorInQ) {
-                $counterRecord->visitors = 1;
-            }
-            if (!$ignoreVisit) {
-                $counterRecord->visits = 1;
-                $counterRecord->maxOnline = 1;
-                $counterRecord->maxOnlineDate = $now;
-            }
-            $counterRecord->visitsIgnoreInterval = 1;
-            $counterRecord->siteId = $siteId;
-            $counterRecord->dateCreated = $now;
-            $counterRecord->dateUpdated = $now;
-            $counterRecord->save();
+            craft::info('can not acquire lock to log visits in counter record for site: ' . $visitorRecord->id);
         }
 
         if ($calendarSystem) {
-            // Log Page Visits
-            /** @var PageVisitsRecord|null $pageVisitRecord */
-            $pageVisitRecord = PageVisitsRecord::find()->where(['page' => $pageUrl, 'siteId' => $siteId])->one();
-            if ($pageVisitRecord) {
-                $dateUpdated = $pageVisitRecord->lastVisit;
+            $mutex = Craft::$app->mutex;
+            $mutexKey = 'counter_table_log_page_visit'; // Unique key for the mutex
+            $mutexTimeout = 1;
+            if ($mutex->acquire($mutexKey, $mutexTimeout)) {
+                // Log Page Visits
+                /** @var PageVisitsRecord|null $pageVisitRecord */
+                $pageVisitRecord = PageVisitsRecord::find()->where(['page' => $pageUrl, 'siteId' => $siteId])->orderBy(['id' => SORT_ASC])->one();
+                if ($pageVisitRecord) {
+                    $dateUpdated = $pageVisitRecord->lastVisit;
 
-                $dateUpdatedTz = null;
-                $dateUpdatedTz1 = null;
-                $pageYearIntlTz = null;
-                $pageMonthIntlTz = null;
-                $pageDayIntlTz = null;
+                    $dateUpdatedTz = null;
+                    $dateUpdatedTz1 = null;
+                    $pageYearIntlTz = null;
+                    $pageMonthIntlTz = null;
+                    $pageDayIntlTz = null;
 
-                // If page visit record has a last visit -not a record that is created by a visit within ignore threshold-
-                if ($dateUpdated) {
-                    $firstVisit = false;
-                    $dateUpdatedTz = new DateTime($dateUpdated, new \DateTimeZone("UTC"));
-                    $dateUpdatedTz->setTimezone($tzTime);
+                    // If page visit record has a last visit -not a record that is created by a visit within ignore threshold-
+                    if ($dateUpdated) {
+                        $firstVisit = false;
+                        $dateUpdatedTz = new DateTime($dateUpdated, new \DateTimeZone("UTC"));
+                        $dateUpdatedTz->setTimezone($tzTime);
 
-                    $pageYearIntlTz = CounterDateTimeHelper::intlDate($dateUpdatedTz, $calendarSystem, 'yyyy', 'en_US');
-                    $pageMonthIntlTz = CounterDateTimeHelper::intlDate($dateUpdatedTz, $calendarSystem, 'MM', 'en_US');
-                    $pageDayIntlTz = CounterDateTimeHelper::intlDate($dateUpdatedTz, $calendarSystem, 'dd', 'en_US');
-                } else {
-                    $firstVisit = true;
-                }
+                        $pageYearIntlTz = CounterDateTimeHelper::intlDate($dateUpdatedTz, $calendarSystem, 'yyyy', 'en_US');
+                        $pageMonthIntlTz = CounterDateTimeHelper::intlDate($dateUpdatedTz, $calendarSystem, 'MM', 'en_US');
+                        $pageDayIntlTz = CounterDateTimeHelper::intlDate($dateUpdatedTz, $calendarSystem, 'dd', 'en_US');
+                    } else {
+                        $firstVisit = true;
+                    }
 
-                $yearIntlTz = CounterDateTimeHelper::intlDate($nowTz, $calendarSystem, 'yyyy', 'en_US');
-                $monthIntlTz = CounterDateTimeHelper::intlDate($nowTz, $calendarSystem, 'MM', 'en_US');
-                $dayIntlTz = CounterDateTimeHelper::intlDate($nowTz, $calendarSystem, 'dd', 'en_US');
+                    $yearIntlTz = CounterDateTimeHelper::intlDate($nowTz, $calendarSystem, 'yyyy', 'en_US');
+                    $monthIntlTz = CounterDateTimeHelper::intlDate($nowTz, $calendarSystem, 'MM', 'en_US');
+                    $dayIntlTz = CounterDateTimeHelper::intlDate($nowTz, $calendarSystem, 'dd', 'en_US');
 
-                if (Craft::$app->getDb()->getIsPgsql()) {
-                    $pageVisitRecord->allTimeIgnoreInterval = new \yii\db\Expression('"allTimeIgnoreInterval" + 1');
-                } else {
-                    $pageVisitRecord->allTimeIgnoreInterval = new \yii\db\Expression('allTimeIgnoreInterval + 1');
-                }
-
-                if (!$ignoreVisit) {
                     if (Craft::$app->getDb()->getIsPgsql()) {
-                        $pageVisitRecord->allTime = new \yii\db\Expression('"allTime"+1');
+                        $pageVisitRecord->allTimeIgnoreInterval = new \yii\db\Expression('"allTimeIgnoreInterval" + 1');
                     } else {
-                        $pageVisitRecord->allTime = new \yii\db\Expression('allTime+1');
+                        $pageVisitRecord->allTimeIgnoreInterval = new \yii\db\Expression('allTimeIgnoreInterval + 1');
                     }
-                }
 
-                // are we in same year as page record?
-                if ($firstVisit || $yearIntlTz == $pageYearIntlTz) {
                     if (!$ignoreVisit) {
                         if (Craft::$app->getDb()->getIsPgsql()) {
-                            $pageVisitRecord->thisYear = new \yii\db\Expression('"thisYear" + 1');
+                            $pageVisitRecord->allTime = new \yii\db\Expression('"allTime"+1');
                         } else {
-                            $pageVisitRecord->thisYear = new \yii\db\Expression('thisYear + 1');
+                            $pageVisitRecord->allTime = new \yii\db\Expression('allTime+1');
                         }
                     }
-                } else {
-                    // are we in next year of page record?
-                    $calendar = IntlCalendar::createInstance();
-                    $calendar->set(
-                        (int)$dateUpdatedTz->format('Y'),
-                        $dateUpdatedTz->format('n') - 1,
-                        (int)$dateUpdatedTz->format('j'),
-                    );
-                    $calendar->roll(IntlCalendar::FIELD_YEAR, 1);
-                    $calendar->set(IntlCalendar::FIELD_MONTH, 1);
-                    $calendar->set(IntlCalendar::FIELD_DAY_OF_MONTH, 1);
-                    $formatter = new IntlDateFormatter('en_us@calendar=' . $calendarSystem, \IntlDateFormatter::FULL, \IntlDateFormatter::FULL, $tz, \IntlDateFormatter::TRADITIONAL, 'yyyy');
-                    $nextYear = $formatter->format($calendar);
-                    $yearNow = CounterDateTimeHelper::intlDate($nowTz, $calendarSystem, 'yyyy');
-                    if ($nextYear === $yearNow) {
-                        $pageVisitRecord->previousYear = $pageVisitRecord->thisYear;
+
+                    // are we in same year as page record?
+                    if ($firstVisit || $yearIntlTz == $pageYearIntlTz) {
+                        if (!$ignoreVisit) {
+                            if (Craft::$app->getDb()->getIsPgsql()) {
+                                $pageVisitRecord->thisYear = new \yii\db\Expression('"thisYear" + 1');
+                            } else {
+                                $pageVisitRecord->thisYear = new \yii\db\Expression('thisYear + 1');
+                            }
+                        }
                     } else {
-                        $pageVisitRecord->previousYear = 0;
-                    }
-
-                    if (!$ignoreVisit) {
-                        $pageVisitRecord->thisYear = 1;
-                    }
-                }
-
-                // are we in same month as page record?
-                if ($firstVisit || ($yearIntlTz == $pageYearIntlTz && $monthIntlTz == $pageMonthIntlTz)) {
-                    if (!$ignoreVisit) {
-                        if (Craft::$app->getDb()->getIsPgsql()) {
-                            $pageVisitRecord->thisMonth = new \yii\db\Expression('"thisMonth" + 1');
+                        // are we in next year of page record?
+                        $calendar = IntlCalendar::createInstance();
+                        $calendar->set(
+                            (int)$dateUpdatedTz->format('Y'),
+                            $dateUpdatedTz->format('n') - 1,
+                            (int)$dateUpdatedTz->format('j'),
+                        );
+                        $calendar->roll(IntlCalendar::FIELD_YEAR, 1);
+                        $calendar->set(IntlCalendar::FIELD_MONTH, 1);
+                        $calendar->set(IntlCalendar::FIELD_DAY_OF_MONTH, 1);
+                        $formatter = new IntlDateFormatter('en_us@calendar=' . $calendarSystem, \IntlDateFormatter::FULL, \IntlDateFormatter::FULL, $tz, \IntlDateFormatter::TRADITIONAL, 'yyyy');
+                        $nextYear = $formatter->format($calendar);
+                        $yearNow = CounterDateTimeHelper::intlDate($nowTz, $calendarSystem, 'yyyy');
+                        if ($nextYear === $yearNow) {
+                            $pageVisitRecord->previousYear = $pageVisitRecord->thisYear;
                         } else {
-                            $pageVisitRecord->thisMonth = new \yii\db\Expression('thisMonth + 1');
+                            $pageVisitRecord->previousYear = 0;
+                        }
+
+                        if (!$ignoreVisit) {
+                            $pageVisitRecord->thisYear = 1;
                         }
                     }
-                } else {
-                    // are we in next month of page record?
-                    $calendar = IntlCalendar::createInstance();
-                    $calendar->set(
-                        (int)$dateUpdatedTz->format('Y'),
-                        $dateUpdatedTz->format('n') - 1,
-                        (int)$dateUpdatedTz->format('j'),
-                    );
-                    $calendar->add(IntlCalendar::FIELD_MONTH, 1);
-                    $calendar->set(IntlCalendar::FIELD_DAY_OF_MONTH, 1);
-                    $formatter = new IntlDateFormatter('en_us@calendar=' . $calendarSystem, \IntlDateFormatter::FULL, \IntlDateFormatter::FULL, $tz, \IntlDateFormatter::TRADITIONAL, 'yyyy/MM');
-                    $nextMonth = $formatter->format($calendar);
 
-                    $monthNow = CounterDateTimeHelper::intlDate($nowTz, $calendarSystem, 'yyyy/MM');
-
-                    if ($nextMonth === $monthNow) {
-                        $pageVisitRecord->previousMonth = $pageVisitRecord->thisMonth;
+                    // are we in same month as page record?
+                    if ($firstVisit || ($yearIntlTz == $pageYearIntlTz && $monthIntlTz == $pageMonthIntlTz)) {
+                        if (!$ignoreVisit) {
+                            if (Craft::$app->getDb()->getIsPgsql()) {
+                                $pageVisitRecord->thisMonth = new \yii\db\Expression('"thisMonth" + 1');
+                            } else {
+                                $pageVisitRecord->thisMonth = new \yii\db\Expression('thisMonth + 1');
+                            }
+                        }
                     } else {
-                        $pageVisitRecord->previousMonth = 0;
-                    }
-                    if (!$ignoreVisit) {
-                        $pageVisitRecord->thisMonth = 1;
-                    }
-                }
+                        // are we in next month of page record?
+                        $calendar = IntlCalendar::createInstance();
+                        $calendar->set(
+                            (int)$dateUpdatedTz->format('Y'),
+                            $dateUpdatedTz->format('n') - 1,
+                            (int)$dateUpdatedTz->format('j'),
+                        );
+                        $calendar->add(IntlCalendar::FIELD_MONTH, 1);
+                        $calendar->set(IntlCalendar::FIELD_DAY_OF_MONTH, 1);
+                        $formatter = new IntlDateFormatter('en_us@calendar=' . $calendarSystem, \IntlDateFormatter::FULL, \IntlDateFormatter::FULL, $tz, \IntlDateFormatter::TRADITIONAL, 'yyyy/MM');
+                        $nextMonth = $formatter->format($calendar);
 
-                // are we in same day as page record?
-                if ($firstVisit || ($yearIntlTz == $pageYearIntlTz && $monthIntlTz == $pageMonthIntlTz && $dayIntlTz == $pageDayIntlTz)) {
-                    if (!$ignoreVisit) {
-                        $pageVisitRecord->today = new \yii\db\Expression('today + 1');
-                    }
-                } else {
-                    $dateUpdatedTz1 = clone $dateUpdatedTz;
-                    $dateUpdatedTz1->modify('+1 day');
-                    if ($dateUpdatedTz1->format('Y-m-d') === $nowTz->format('Y-m-d')) {
-                        $pageVisitRecord->yesterday = $pageVisitRecord->today;
-                    } else {
-                        $pageVisitRecord->yesterday = 0;
-                    }
+                        $monthNow = CounterDateTimeHelper::intlDate($nowTz, $calendarSystem, 'yyyy/MM');
 
-                    if (!$ignoreVisit) {
-                        $pageVisitRecord->today = 1;
-                    }
-                }
-
-                $nowTz1 = clone $nowTz;
-                if ($dateUpdatedTz) {
-                    $dateUpdatedTz1 = clone $dateUpdatedTz;
-                }
-                // Is data for this week visits is updated?
-                if ($firstVisit || CounterDateTimeHelper::lastWeek($siteId, $dateUpdatedTz1, $tzTime) == CounterDateTimeHelper::lastWeek($siteId, $nowTz1, $tzTime)) {
-                    if (!$ignoreVisit) {
-                        if (Craft::$app->getDb()->getIsPgsql()) {
-                            $pageVisitRecord->thisWeek = new \yii\db\Expression('"thisWeek" + 1');
+                        if ($nextMonth === $monthNow) {
+                            $pageVisitRecord->previousMonth = $pageVisitRecord->thisMonth;
                         } else {
-                            $pageVisitRecord->thisWeek = new \yii\db\Expression('thisWeek + 1');
+                            $pageVisitRecord->previousMonth = 0;
+                        }
+                        if (!$ignoreVisit) {
+                            $pageVisitRecord->thisMonth = 1;
                         }
                     }
-                } else {
+
+                    // are we in same day as page record?
+                    if ($firstVisit || ($yearIntlTz == $pageYearIntlTz && $monthIntlTz == $pageMonthIntlTz && $dayIntlTz == $pageDayIntlTz)) {
+                        if (!$ignoreVisit) {
+                            $pageVisitRecord->today = new \yii\db\Expression('today + 1');
+                        }
+                    } else {
+                        $dateUpdatedTz1 = clone $dateUpdatedTz;
+                        $dateUpdatedTz1->modify('+1 day');
+                        if ($dateUpdatedTz1->format('Y-m-d') === $nowTz->format('Y-m-d')) {
+                            $pageVisitRecord->yesterday = $pageVisitRecord->today;
+                        } else {
+                            $pageVisitRecord->yesterday = 0;
+                        }
+
+                        if (!$ignoreVisit) {
+                            $pageVisitRecord->today = 1;
+                        }
+                    }
+
                     $nowTz1 = clone $nowTz;
-                    $dateUpdatedTz1 = clone $dateUpdatedTz;
-
-                    if ($dateUpdatedTz1 < CounterDateTimeHelper::lastWeek($siteId, $nowTz1, $tzTime)) {
-                        $pageVisitRecord->previousWeek = 0;
+                    if ($dateUpdatedTz) {
+                        $dateUpdatedTz1 = clone $dateUpdatedTz;
+                    }
+                    // Is data for this week visits is updated?
+                    if ($firstVisit || CounterDateTimeHelper::lastWeek($siteId, $dateUpdatedTz1, $tzTime) == CounterDateTimeHelper::lastWeek($siteId, $nowTz1, $tzTime)) {
+                        if (!$ignoreVisit) {
+                            if (Craft::$app->getDb()->getIsPgsql()) {
+                                $pageVisitRecord->thisWeek = new \yii\db\Expression('"thisWeek" + 1');
+                            } else {
+                                $pageVisitRecord->thisWeek = new \yii\db\Expression('thisWeek + 1');
+                            }
+                        }
                     } else {
-                        $pageVisitRecord->previousWeek = $pageVisitRecord->thisWeek;
+                        $nowTz1 = clone $nowTz;
+                        $dateUpdatedTz1 = clone $dateUpdatedTz;
+
+                        if ($dateUpdatedTz1 < CounterDateTimeHelper::lastWeek($siteId, $nowTz1, $tzTime)) {
+                            $pageVisitRecord->previousWeek = 0;
+                        } else {
+                            $pageVisitRecord->previousWeek = $pageVisitRecord->thisWeek;
+                        }
+
+                        if (!$ignoreVisit) {
+                            $pageVisitRecord->thisWeek = 1;
+                        }
                     }
 
                     if (!$ignoreVisit) {
-                        $pageVisitRecord->thisWeek = 1;
+                        $pageVisitRecord->lastVisit = $formattedNow;
                     }
-                }
 
-                if (!$ignoreVisit) {
-                    $pageVisitRecord->lastVisit = $now;
+                    $pageVisitRecord->dateUpdated = $formattedNow;
+                    $pageVisitRecord->update();
+                } else {
+                    $pageVisitRecord = new PageVisitsRecord();
+                    $pageVisitRecord->allTimeIgnoreInterval = 1;
+                    if (!$ignoreVisit) {
+                        $pageVisitRecord->allTime = 1;
+                        $pageVisitRecord->thisYear = 1;
+                        $pageVisitRecord->thisMonth = 1;
+                        $pageVisitRecord->thisWeek = 1;
+                        $pageVisitRecord->today = 1;
+                        $pageVisitRecord->lastVisit = $formattedNow;
+                    }
+                    $pageVisitRecord->page = $pageUrl;
+                    $pageVisitRecord->siteId = $siteId;
+                    $pageVisitRecord->dateCreated = $formattedNow;
+                    $pageVisitRecord->dateUpdated = $formattedNow;
+                    $pageVisitRecord->save();
                 }
-    
-                $pageVisitRecord->dateUpdated = $now;
-                $pageVisitRecord->update();
+                $mutex->release($mutexKey);
             } else {
-                $pageVisitRecord = new PageVisitsRecord();
-                $pageVisitRecord->allTimeIgnoreInterval = 1;
-                if (!$ignoreVisit) {
-                    $pageVisitRecord->allTime = 1;
-                    $pageVisitRecord->thisYear = 1;
-                    $pageVisitRecord->thisMonth = 1;
-                    $pageVisitRecord->thisWeek = 1;
-                    $pageVisitRecord->today = 1;
-                    $pageVisitRecord->lastVisit = $now;
-                }
-                $pageVisitRecord->page = $pageUrl;
-                $pageVisitRecord->siteId = $siteId;
-                $pageVisitRecord->dateCreated = $now;
-                $pageVisitRecord->dateUpdated = $now;
-                $pageVisitRecord->save();
+                craft::info('can not acquire lock to log visits in page visits: ' . $visitorRecord->id);
             }
         }
 
