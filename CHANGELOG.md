@@ -1,5 +1,13 @@
 # Release Notes for Counter plugin for Craft 5
 
+## Unreleased
+
+- Counter widgets can now load from the cache.
+- Counter widgets can now load after the page has loaded.
+- The date ranges for the next visited pages widget are now limited to smaller ranges.
+- Improved the performance of some queries by adding new index.
+- Fixed a bug that may have caused concurrent visits to be logged incorrectly.
+
 ## 1.0.0-alpha.4 - 2024-10-27
 
 - Fixed a bug where the visitor data on the maximum online users widget was calculated incorrectly.
