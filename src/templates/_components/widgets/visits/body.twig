@@ -15,7 +15,7 @@
     new Chart(ctx, {
         type: 'line',
         data: {
-        labels: {{ label|raw }},
+        labels: {{ labels|raw }},
         datasets: [{
             label: Craft.escapeHtml(Craft.t('counter', 'Visits')),
             data: {{ visitsData }},
