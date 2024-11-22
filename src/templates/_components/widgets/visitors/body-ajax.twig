@@ -1,0 +1,97 @@
+<div class="counter-widget-stat">
+{% apply spaceless %}
+    <strong class="counter-widget-stat-number {{ namespaceId }}"></strong><br>
+{% endapply %}
+</div>
+<br>
+
+{% set yLabel= 'Visitors' %}
+{% if widget.visitorType == 'new' %}
+    {% set yLabel= 'New visitors' %}
+{% endif %}
+
+<div>
+    <canvas id="{{ namespaceId }}"></canvas>
+</div>
+
+{% js %}
+
+if (typeof counterIntervals['{{ namespaceId }}'] !== 'undefined') {
+    clearInterval(counterIntervals['{{ namespaceId }}']);
+}
+
+// Check if function is declared by same widget
+if (typeof fetchDataVisitors !== 'function') {
+    function fetchDataVisitors(widgetId, showChart, namespaceId, yLabel) {
+        var loading = $('.' + namespaceId);
+        loading.html('<div id="graphic" class="spinner over-bg"></div>');
+        var ctx = document.getElementById(namespaceId);
+        var data = {};
+        data['widgetId'] = widgetId;
+        $.ajax({
+            url: counterWidgetDataUrl,// Replace with your API endpoint
+            method: 'GET',
+            dataType: 'json',
+            data: data,
+            success: function(result) {
+                const number = result[0];
+                if (typeof result[0] === 'string') {
+                    result[0] = JSON.parse(result[0]);
+                }
+                loading.text(result[0]);
+                if (typeof result[1] === 'string') {
+                    result[1] = JSON.parse(result[1]);
+                }
+                if (typeof result[2] === 'string') {
+                    result[2] = JSON.parse(result[2]);
+                }
+                if (showChart) {
+                    const labels = result[1];
+                    const visitorsData = result[2];
+                    counterChartsData[namespaceId] = {
+                        labels: labels,
+                        datasets: [{
+                            label: Craft.escapeHtml(Craft.t('counter', yLabel)),
+                            data: visitorsData,
+                            borderWidth: 1,
+                            yAxisID: 'visitors',
+                        }]
+                    };
+                    counterChartsOptions[namespaceId] = {
+                        scales: {
+                            visitors: {
+                                position: 'left',
+                            }
+                        }
+                    };
+                    if (typeof counterCharts[namespaceId] === 'undefined') {
+                        counterCharts[namespaceId] = new Chart(ctx, {
+                            type: 'line',
+                            data: counterChartsData[namespaceId],
+                            options: counterChartsOptions[namespaceId]
+                        });
+                    } else {
+                        counterCharts[namespaceId].data = counterChartsData[namespaceId];
+                        counterCharts[namespaceId].update(); // Update the chart
+                    }
+                }
+            },
+            error: function(xhr, status, error) {
+                loading.text('');
+                ctx.remove();
+                console.error('Error fetching data:', error);
+            }
+        });
+    }
+}
+
+{% if widget.autoRefreshWidget %}
+    counterIntervals['{{namespaceId}}'] = setInterval(() => {
+        fetchDataVisitors('{{ widget.id }}', '{{ widget.showChart }}', '{{namespaceId}}', '{{ yLabel }}');
+    }, {{ widget.autoRefreshWidget }});
+{% endif %}
+
+$(document).ready(function () {
+    fetchDataVisitors('{{ widget.id }}', '{{ widget.showChart }}', '{{namespaceId}}', '{{ yLabel }}');
+});
+{% endjs %}

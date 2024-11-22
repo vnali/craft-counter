@@ -1,0 +1,46 @@
+<div id="{{ namespaceId }}" class="counter-widget-stat">
+{% apply spaceless %}
+    <strong class="counter-widget-stat-number"></strong><br>
+{% endapply %}
+</div>
+
+{% js %}
+
+if (typeof window.counterIntervals['{{ namespaceId }}'] !== 'undefined') {
+    clearInterval(window.counterIntervals['{{ namespaceId }}']);
+}
+
+// Check if function is declared by same widget
+if (typeof fetchDataOnline !== 'function') {
+    function fetchDataOnline(widgetId, namespaceId) {
+        var container = $('#' + namespaceId + ' .counter-widget-stat-number');
+        container.html('<div id="graphic" class="spinner over-bg"></div>');
+
+        var data = {};
+        data['widgetId'] = widgetId;
+        $.ajax({
+            url: counterWidgetDataUrl,// Replace with your API endpoint
+            method: 'GET',
+            dataType: 'json',
+            data: data,
+            success: function(result) {
+                container.text(result);
+            },
+            error: function(xhr, status, error) {
+                container.text('');
+                console.error('Error fetching data:', error);
+            }
+        });
+    }
+}
+
+{% if widget.autoRefreshWidget %}
+    window.counterIntervals['{{namespaceId}}'] = setInterval(() => {
+        fetchDataOnline('{{ widget.id }}', '{{namespaceId}}');
+    }, {{ widget.autoRefreshWidget }});
+{% endif %}
+
+$(document).ready(function () {
+    fetchDataOnline('{{ widget.id }}', '{{namespaceId}}');
+});
+{% endjs %}

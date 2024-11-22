@@ -1,7 +1,22 @@
 {% import "_includes/forms" as forms %}
 
+{% set widgetId = '#widget' ~ widget.id %}
 <div id="{{ id }}">
-    {% include 'counter/_components/widgets/_includes/_dateRangeField' with { id: namespaceId, widget: widget } %}
+
+    {% set rangeInput %}
+        <div class="select">
+            <select id="dateRange" name="dateRange">
+                <option value="previousHour"{% if widget.dateRange=='previousHour' %} selected{% endif %}>{{ 'Previous hour'|t('counter') }}</option>
+                <option value="todayPriorToThisHour"{% if widget.dateRange=='todayPriorToThisHour' %} selected{% endif %}>{{ 'Today (prior to this hour)'|t('counter') }}</option>
+                <option value="yesterday"{% if widget.dateRange=='yesterday' %} selected{% endif %}>{{ 'Yesterday'|t('counter') }}</option>
+            </select>
+        </div>
+    {% endset %}
+
+    {{ forms.field({
+        id: 'rangeInput',
+        label: "Date Range"|t('counter')
+    }, rangeInput) }}
 
     {{ forms.selectField({
         label: 'Page'|t('counter'),
@@ -30,6 +45,27 @@
         value: widget.nextPagesLimit is defined ? widget.nextPagesLimit,
     }) }}
 
+    {{ forms.lightswitchField({
+        label: 'Load widget data after page load'|t('counter'),
+        id: 'useAjax',
+        name: 'useAjax',
+        required: false,
+        value: 1,
+        on: widget.useAjax is defined ? widget.useAjax,
+        tip: 'If loading this widget takes time, select this option to delay its loading until after the page has loaded.'|t('counter'),
+    }) }}
+
+    {#
+    {{ forms.textField({
+        label: 'Auto refresh the widget'|t('counter'),
+        id: 'autoRefreshWidget',
+        name: 'autoRefreshWidget',
+        required: false,
+        instruction: 'Specify interval raete in milliseconds'|t('counter'),
+        tip: 'Auro refresh does not work for date ranges like yesterday, previous hour'|t('counter'),
+        value: widget.autoRefreshWidget is defined ? widget.autoRefreshWidget,
+    }) }}
+    #}
     {#
     {% set typeInput %}
         <div class="select">
@@ -55,6 +91,9 @@
 {% endif %}
 
 {% css %}
+    {{ widgetId }} div[data-attribute="autoRefreshWidget"] {
+        display: none;
+    }
     div[data-attribute=pageId] .select
     {
         min-width: 300px;
@@ -65,6 +104,19 @@
     }
 {% endcss %}
 {% js %}
+
+    if ($('{{ widgetId }} div[data-attribute="useAjax"] input').val() == '1') {
+        $('{{ widgetId }} div[data-attribute="autoRefreshWidget"]').css('display', 'block');
+    }
+
+    $('{{ widgetId }} div[data-attribute="useAjax"] .lightswitch').on('change', function() {
+        var isEnabled = $(this).find('input').val();
+        if (isEnabled) {
+            $('{{ widgetId }} div[data-attribute="autoRefreshWidget"]').css('display', 'block');
+        } else {
+            $('{{ widgetId }} div[data-attribute="autoRefreshWidget"]').css('display', 'none');
+        }
+    });
 
     var csrfTokenName;
     var csrfTokenValue;

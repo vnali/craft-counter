@@ -74,6 +74,28 @@
         instructions: "By selecting new visitors, you can view the number of new visitors within selected interval for that day."|t('counter'),
         tip: "The new visitors value only affects the data on the chart but The total value represents all visitors for the selected date range."|t('counter'),
     }, visitorTypeInput) }}
+
+    {{ forms.lightswitchField({
+        label: 'Load widget data after page load'|t('counter'),
+        id: 'useAjax',
+        name: 'useAjax',
+        required: false,
+        value: 1,
+        on: widget.useAjax is defined ? widget.useAjax,
+        tip: 'If loading this widget takes time, select this option to delay its loading until after the page has loaded.'|t('counter'),
+    }) }}
+
+    {#
+    {{ forms.textField({
+        label: 'Auto refresh the widget'|t('counter'),
+        id: 'autoRefreshWidget',
+        name: 'autoRefreshWidget',
+        required: false,
+        instruction: 'Specify interval raete in milliseconds'|t('counter'),
+        tip: 'Auro refresh does not work for date ranges like yesterday, previous hour'|t('counter'),
+        value: widget.autoRefreshWidget is defined ? widget.autoRefreshWidget,
+    }) }}
+    #}
 </div>
 
 {#
@@ -104,5 +126,17 @@
             $('{{ widgetId }} div[data-attribute="preferredIntervalInput"]').css('display', 'none');
         }
     });
+    if ($('{{ widgetId }} div[data-attribute="useAjax"] input').val() == '1') {
+        $('{{ widgetId }} div[data-attribute="autoRefreshWidget"]').css('display', 'block');
+    }
+    $('{{ widgetId }} div[data-attribute="useAjax"] .lightswitch').on('change', function() {
+        var isEnabled = $(this).find('input').val();
+        if (isEnabled) {
+            $('{{ widgetId }} div[data-attribute="autoRefreshWidget"]').css('display', 'block');
+        } else {
+            $('{{ widgetId }} div[data-attribute="autoRefreshWidget"]').css('display', 'none');
+        }
+    });
 {% endjs %}
+
 {% do view.registerAssetBundle("vnali\\counter\\assets\\CounterWidgetSettingsAsset") %}

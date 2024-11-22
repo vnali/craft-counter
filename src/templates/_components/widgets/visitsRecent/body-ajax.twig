@@ -1,0 +1,122 @@
+<div class="counter-widget-stat">
+{% apply spaceless %}
+    <strong class="counter-widget-stat-number {{ namespaceId }}"></strong>
+{% endapply %}
+</div>
+<br>
+{% if widget.showChart is defined and widget.showChart %}
+    <div>
+        <canvas id="{{ namespaceId }}"></canvas>
+    </div>
+{% endif %}
+
+{% js %}
+
+if (typeof counterIntervals['{{ namespaceId }}'] !== 'undefined') {
+    clearInterval(counterIntervals['{{ namespaceId }}']);
+}
+
+// Check if function is declared by same widget
+if (typeof fetchDataVisitsRecent !== 'function') {
+    function fetchDataVisitsRecent(widgetId, showChart, showVisitor, namespaceId) {
+        var loading = $('.' + namespaceId);
+        loading.html('<div id="graphic" class="spinner over-bg"></div>');
+        var ctx = document.getElementById(namespaceId);
+        var data = {};
+        data['widgetId'] = widgetId;
+        $.ajax({
+            url: window.counterWidgetDataUrl,// Replace with your API endpoint
+            method: 'GET',
+            dataType: 'json',
+            data: data,
+            success: function(result) {
+                const number = result[0];
+                if (typeof result[0] === 'string') {
+                    result[0] = JSON.parse(result[0]);
+                }
+                loading.text(result[0]);
+                if (typeof result[1] === 'string') {
+                    result[1] = JSON.parse(result[1]);
+                }
+                if (typeof result[2] === 'string') {
+                    result[2] = JSON.parse(result[2]);
+                }
+                if (typeof result[3] === 'string') {
+                    result[3] = JSON.parse(result[3]);
+                }
+                if (typeof result[4] === 'string') {
+                    result[4] = JSON.parse(result[4]);
+                }
+                if (showChart) {
+                    const labels = result[1];
+                    const visitsData = result[2];
+                    const visitorsData = result[3];
+                    const showVisitorOnChart = result[4];
+                    counterChartsData[namespaceId] = {
+                        labels: labels,
+                        datasets: [{
+                            label: Craft.escapeHtml(Craft.t('counter', 'Visits')),
+                            data: visitsData,
+                            borderWidth: 1,
+                            yAxisID: 'visit',
+                        }]
+                    };
+                    counterChartsOptions[namespaceId] = {
+                        scales: {
+                            visit: {
+                                position: 'left',
+                            }
+                        }
+                    };
+                    if (showVisitor) {
+                        if (showVisitorOnChart) {
+                            counterChartsData[namespaceId].datasets.push({
+                                label: Craft.escapeHtml(Craft.t('counter', 'Visitors')),
+                                yAxisID: 'visitor',
+                                data: visitorsData,
+                                borderWidth: 1,
+                            });
+                            counterChartsOptions[namespaceId].scales.visitor = {
+                                display: true,
+                                position: 'right',
+                                grid: {
+                                    drawOnChartArea: false, // only want the grid lines for one axis to show up
+                                }
+                            };
+                        }
+                    }
+                    if (typeof counterCharts[namespaceId] === 'undefined') {
+                        counterCharts[namespaceId] = new Chart(ctx, {
+                            type: 'line',
+                            data: counterChartsData[namespaceId],
+                            options: counterChartsOptions[namespaceId]
+                        });
+                    } else {
+                        counterCharts[namespaceId].data = counterChartsData[namespaceId];
+                        counterCharts[namespaceId].update(); // Update the chart
+                    }
+                }
+            },
+            error: function(xhr, status, error) {
+                loading.text('');
+                ctx.remove();
+                console.error('Error fetching data:', error);
+            }
+        });
+    }
+}
+
+{% if widget.autoRefreshWidget %}
+    if ('{{ widget.dateRange }}' != 'previousHour' && '{{ widget.dateRange }}' != 'yesterday') {
+        counterIntervals['{{namespaceId}}'] = setInterval(() => {
+            fetchDataVisitsRecent('{{ widget.id }}', '{{ widget.showChart }}', '{{ widget.showVisitor }}', '{{namespaceId}}');
+        }, {{ widget.autoRefreshWidget }});
+    }
+{% endif %}
+
+$(document).ready(function () {
+    fetchDataVisitsRecent('{{ widget.id }}', '{{ widget.showChart }}', '{{ widget.showVisitor }}', '{{namespaceId}}');
+});
+{% endjs %}
+
+{% do view.registerAssetBundle("vnali\\counter\\assets\\CounterWidgetChartAsset") %}

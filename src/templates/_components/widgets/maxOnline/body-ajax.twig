@@ -1,0 +1,143 @@
+<div class="counter-widget-stat {{ namespaceId }}">
+{% apply spaceless %}
+    <strong class="counter-widget-stat-number"></strong><br>
+    <span class="counter-widget-stat-date"></span><br>
+{% endapply %}
+</div>
+<br>
+{% if widget.showChart is defined and widget.showChart %}
+    <div>
+        <canvas id="{{ namespaceId }}"></canvas>
+    </div>
+{% endif %}
+
+{% js %}
+
+if (typeof counterIntervals['{{ namespaceId }}'] !== 'undefined') {
+    clearInterval(counterIntervals['{{ namespaceId }}']);
+}
+
+// Check if function is declared by same widget
+if (typeof fetchDataMaxOnline !== 'function') {
+    function fetchDataMaxOnline(widgetId, showChart, showVisitor, namespaceId) {
+        var statnumber = $('.' + namespaceId + ' .counter-widget-stat-number');
+        var statdate = $('.' + namespaceId + ' .counter-widget-stat-date');
+        statnumber.html('<div id="graphic" class="spinner over-bg"></div>');
+        var ctx = document.getElementById(namespaceId);
+
+        var data = {};
+        data['widgetId'] = widgetId;
+        $.ajax({
+            url: counterWidgetDataUrl,// Replace with your API endpoint
+            method: 'GET',
+            dataType: 'json',
+            data: data,
+            success: function(result) {
+                const number = result[0];
+                if (typeof result[0] === 'string') {
+                    result[0] = JSON.parse(result[0]);
+                }
+                statnumber.text(result[0]);
+                statdate.text(result[1]);
+                if (typeof result[2] === 'string') {
+                    result[2] = JSON.parse(result[2]);
+                }
+                if (typeof result[3] === 'string') {
+                    result[3] = JSON.parse(result[3]);
+                }
+                if (typeof result[4] === 'string') {
+                    result[4] = JSON.parse(result[4]);
+                }
+                if (typeof result[5] === 'string') {
+                    result[5] = JSON.parse(result[5]);
+                }
+                if (showChart) {
+                    const date = result[1];
+                    const labels = result[2];
+                    const maxOnlineData = result[3];
+                    const visitorsData = result[4];
+                    const showVisitorOnChart = result[5];
+                    counterChartsData[namespaceId] = {
+                        labels: labels,
+                        datasets: [{
+                            label: Craft.escapeHtml(Craft.t('counter', 'Max Online')),
+                            data: maxOnlineData,
+                            borderWidth: 1,
+                            yAxisID: 'maxOnline',
+                        }]
+                    };
+                    counterChartsOptions[namespaceId] = {
+                        scales: {
+                            maxOnline: {
+                                position: 'left',
+                            }
+                        }, 
+                        plugins: {
+                            tooltip: {
+                                callbacks: {
+                                    label: function(context) {
+                                        if (context.dataset.yAxisID == 'maxOnline') {
+                                            const dataIndex = context.dataIndex;
+                                            const datasets = context.chart.data.datasets;
+                                            var label = context.dataset.data[dataIndex].y;
+                                            if (context.dataset.data[dataIndex].time) {
+                                                label = label +' - ' + context.dataset.data[dataIndex].time;
+                                            }
+                                            return label;
+                                        }
+                                    }
+                                }
+                            }
+                        },
+                    };
+                    if (showVisitor) {
+                        if (showVisitorOnChart) {
+                            counterChartsData[namespaceId].datasets.push({
+                                label: Craft.escapeHtml(Craft.t('counter', 'Visitors')),
+                                yAxisID: 'visitor',
+                                data: visitorsData,
+                                borderWidth: 1,
+                            });
+                            counterChartsOptions[namespaceId].scales.visitor = {
+                                display: true,
+                                position: 'right',
+                                grid: {
+                                    drawOnChartArea: false, // only want the grid lines for one axis to show up
+                                }
+                            };
+                        }
+                    }
+                    if (typeof counterCharts[namespaceId] === 'undefined') {
+                        counterCharts[namespaceId] = new Chart(ctx, {
+                            type: 'line',
+                            data: counterChartsData[namespaceId],
+                            options: counterChartsOptions[namespaceId]
+                        });
+                    } else {
+                        counterCharts[namespaceId].data = counterChartsData[namespaceId];
+                        counterCharts[namespaceId].update(); // Update the chart
+                    }
+                }
+            },
+            error: function(xhr, status, error) {
+                statnumber.text('');
+                statdate.text('');
+                ctx.remove()
+                console.error('Error fetching data:', error);
+            }
+        });
+    }
+}
+
+{% if widget.autoRefreshWidget %}
+    if ('{{ widget.dateRange }}' != 'previousHour' && '{{ widget.dateRange }}' != 'yesterday') {
+        counterIntervals['{{namespaceId}}'] = setInterval(() => {
+            fetchDataMaxOnline('{{ widget.id }}', '{{ widget.showChart }}', '{{ widget.showVisitor }}', '{{namespaceId}}');
+        }, {{ widget.autoRefreshWidget }});
+    }
+{% endif %}
+
+$(document).ready(function () {
+    fetchDataMaxOnline('{{ widget.id }}', '{{ widget.showChart }}', '{{ widget.showVisitor }}', '{{namespaceId}}');
+});
+{% endjs %}

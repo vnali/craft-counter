@@ -1,0 +1,54 @@
+<div class="counter-widget-stat counter-widget-table-wrapper page-statistics">
+    <div id="{{ namespaceId }}"></div>
+</div>
+
+{% js %}
+
+if (typeof counterIntervals['{{ namespaceId }}'] !== 'undefined') {
+    clearInterval(counterIntervals['{{ namespaceId }}']);
+}
+
+// Check if function is declared by same widget
+if (typeof fetchPageStatistics !== 'function') {
+    function fetchPageStatistics(widgetId, namespaceId) {
+        var container = $('#' + namespaceId);
+        container.html('<div id="graphic" class="spinner over-bg"></div>');
+
+        var data = {};
+        data['widgetId'] = widgetId;
+        $.ajax({
+            url: window.counterWidgetDataUrl,// Replace with your API endpoint
+            method: 'GET',
+            dataType: 'json',
+            data: data,
+            success: function(result) {
+                new Craft.VueAdminTable({
+                    columns: [
+                        { name: '__slot:title', title: Craft.escapeHtml(Craft.t('counter', 'Page')) },
+                        { name: 'value', title: Craft.escapeHtml(Craft.t('counter', "value" )) },
+                    ],
+                    container: '#' + namespaceId,
+                    emptyMessage: Craft.t('counter', 'No data.'),
+                    tableData: result,
+                });
+
+                $('.page-statistics tr:first').css('display', 'none');
+            },
+            error: function(xhr, status, error) {
+                container.text('');
+                console.error('Error fetching data:', error);
+            }
+        });
+    }
+}
+
+{% if widget.autoRefreshWidget %}
+    counterIntervals['{{namespaceId}}'] = setInterval(() => {
+        fetchPageStatistics('{{ widget.id }}', '{{namespaceId}}');
+    }, {{ widget.autoRefreshWidget }});
+{% endif %}
+
+$(document).ready(function () {
+    fetchPageStatistics('{{ widget.id }}', '{{namespaceId}}');
+});
+{% endjs %}

@@ -1,0 +1,77 @@
+<div>
+    <div id="{{ namespaceId }}loading" class="text-align-center"></div>
+    <canvas id="{{ namespaceId }}"></canvas>
+</div>
+
+{% css %}
+    .text-align-center{
+        text-align: center;
+    }
+{% endcss %}
+
+{% js %}
+
+if (typeof counterIntervals['{{ namespaceId }}'] !== 'undefined') {
+    clearInterval(counterIntervals['{{ namespaceId }}']);
+}
+
+// Check if function is declared by same widget
+if (typeof fetchDataNextVisitedPages !== 'function') {
+    function fetchDataNextVisitedPages(widgetId, namespaceId) {
+        var loading = $('#' + namespaceId + 'loading');
+        loading.html('<div id="graphic" class="spinner over-bg"></div>');
+        var ctx = document.getElementById(namespaceId);
+
+        var data = {};
+        data['widgetId'] = widgetId;
+        $.ajax({
+            url: window.counterWidgetDataUrl,// Replace with your API endpoint
+            method: 'GET',
+            dataType: 'json',
+            data: data,
+            success: function(result) {
+                loading.text('');
+                const labels = result[0];
+                const data = result[1];
+                if (typeof window.counterCharts[namespaceId] === 'undefined') {
+                    window.counterCharts[namespaceId] = new Chart(ctx, {
+                        type: 'doughnut',
+                        data: {
+                            labels: labels,
+                            datasets: [{
+                                label: Craft.escapeHtml(Craft.t('counter', 'Number of next pages')),
+                                data: data,
+                            }]
+                        },
+                    });
+                } else {
+                    window.counterChartsData = {
+                        labels: labels,
+                        datasets: [{
+                            label: Craft.escapeHtml(Craft.t('counter', 'Number of next pages')),
+                            data: data,
+                        }]
+                    };
+                    window.counterCharts[namespaceId].data = window.counterChartsData;
+                    window.counterCharts[namespaceId].update(); // Update the chart
+                }
+            }, error: function(xhr, status, error) {
+                loading.text('');
+                ctx.remove();
+                console.error('Error fetching data:', error);
+            }
+        });
+    }
+}
+
+{% if widget.autoRefreshWidget %}
+    counterIntervals['{{namespaceId}}'] = setInterval(() => {
+        fetchDataNextVisitedPages('{{ widget.id }}', '{{namespaceId}}');
+    }, {{ widget.autoRefreshWidget }});
+{% endif %}
+
+$(document).ready(function () {
+    fetchDataNextVisitedPages('{{ widget.id }}', '{{namespaceId}}');
+});
+
+{% endjs %}

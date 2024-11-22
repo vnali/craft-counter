@@ -1,0 +1,52 @@
+<div class="counter-widget-stat counter-widget-table-wrapper">
+    <div id="{{ namespaceId }}"></div>
+</div>
+
+{% js %}
+if (typeof counterIntervals['{{ namespaceId }}'] !== 'undefined') {
+    clearInterval(counterIntervals['{{ namespaceId }}']);
+}
+
+// Check if function is declared by same widget
+if (typeof fetchTrendingPages !== 'function') {
+    function fetchTrendingPages(widgetId, namespaceId) {
+        var container = $('#' + namespaceId);
+        container.html('<div id="graphic" class="spinner over-bg"></div>');
+        var data = {};
+        data['widgetId'] = widgetId;
+        $.ajax({
+            url: window.counterWidgetDataUrl,// Replace with your API endpoint
+            method: 'GET',
+            dataType: 'json',
+            data: data,
+            success: function(result) {
+                new Craft.VueAdminTable({
+                    columns: [
+                        { name: '__slot:title', title: Craft.escapeHtml(Craft.t('counter', 'Page')) },
+                        { name: 'current', title: Craft.escapeHtml(Craft.t('counter', "{{ now }}" )) },
+                        { name: 'previous', title: Craft.escapeHtml(Craft.t('counter', "{{ before }}")) },
+                        { name: 'growth', title: Craft.escapeHtml(Craft.t('counter', 'Growth')) },
+                    ],
+                    container: '#' + namespaceId,
+                    emptyMessage: Craft.t('counter', 'No data.'),
+                    tableData: result,
+                });
+            },
+            error: function(xhr, status, error) {
+                container.text('');
+                console.error('Error fetching data:', error);
+            }
+        });
+    }
+}
+
+{% if widget.autoRefreshWidget %}
+    counterIntervals['{{namespaceId}}'] = setInterval(() => {
+        fetchTrendingPages('{{ widget.id }}', '{{namespaceId}}');
+    }, {{ widget.autoRefreshWidget }});
+{% endif %}
+
+$(document).ready(function () {
+    fetchTrendingPages('{{ widget.id }}', '{{namespaceId}}');
+});
+{% endjs %}
