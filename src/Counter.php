@@ -4,6 +4,7 @@ namespace vnali\counter;
 
 use Craft;
 use craft\base\Plugin;
+use craft\events\RegisterCacheOptionsEvent;
 use craft\events\RegisterComponentTypesEvent;
 use craft\events\RegisterGqlDirectivesEvent;
 use craft\events\RegisterGqlQueriesEvent;
@@ -11,10 +12,12 @@ use craft\events\RegisterGqlSchemaComponentsEvent;
 use craft\events\RegisterGqlTypesEvent;
 use craft\events\RegisterUrlRulesEvent;
 use craft\events\RegisterUserPermissionsEvent;
+use craft\events\WidgetEvent;
 use craft\helpers\UrlHelper;
 use craft\services\Dashboard;
 use craft\services\Gql;
 use craft\services\UserPermissions;
+use craft\utilities\ClearCaches;
 use craft\web\twig\variables\CraftVariable;
 use craft\web\UrlManager;
 use vnali\counter\assets\CounterAsset;
@@ -60,7 +63,7 @@ class Counter extends Plugin
      */
     public static Counter $plugin;
 
-    public string $schemaVersion = '1.0.0-alpha.1';
+    public string $schemaVersion = '1.0.0-alpha.5';
     public bool $hasCpSettings = true;
     public bool $hasCpSection = true;
 
@@ -92,6 +95,27 @@ class Counter extends Plugin
         if (!Craft::$app->getRequest()->getIsConsoleRequest() && !Craft::$app->getRequest()->getIsCpRequest() && $settings->registerCounter) {
             $view->registerAssetBundle(CounterAsset::class);
         }
+
+        Event::on(
+            ClearCaches::class,
+            ClearCaches::EVENT_REGISTER_TAG_OPTIONS,
+            function(RegisterCacheOptionsEvent $event) {
+                $event->options = array_merge(
+                    $event->options,
+                    $this->_customAdminCpTagOptions()
+                );
+            }
+        );
+
+        Event::on(
+            Dashboard::class,
+            Dashboard::EVENT_AFTER_SAVE_WIDGET,
+            function(WidgetEvent $event) {
+                $cache = Craft::$app->getCache();
+                $widgetId = $event->widget->id;
+                $cache->delete('counter-plugin-widget-' . $widgetId);
+            }
+        );
     }
 
     /**
@@ -131,6 +155,21 @@ class Counter extends Plugin
     }
 
     /**
+     * Returns cache tag used by the plugin
+     *
+     * @return array
+     */
+    private function _customAdminCpTagOptions(): array
+    {
+        return [
+            [
+                'tag' => 'counter-plugin',
+                'label' => Craft::t('counter', 'Counter plugin'),
+            ],
+        ];
+    }
+
+    /**
      * Register CP Url and site rules.
      *
      * @return void
@@ -143,6 +182,7 @@ class Counter extends Plugin
             function(RegisterUrlRulesEvent $event) {
                 $event->rules['counter/settings/general'] = 'counter/settings/general';
                 $event->rules['counter/counter/pages'] = 'counter/counter/pages';
+                $event->rules['counter/widget/data'] = 'counter/widget/data';
             }
         );
 

@@ -11,7 +11,12 @@ use vnali\counter\assets\CounterWidgetTableAsset;
 use vnali\counter\base\DateWidgetTrait;
 use vnali\counter\Counter;
 use vnali\counter\helpers\StringHelper as HelpersStringHelper;
+use vnali\counter\models\Settings;
 use vnali\counter\records\PageVisitsRecord;
+use yii\caching\ChainedDependency;
+use yii\caching\DbDependency;
+use yii\caching\ExpressionDependency;
+use yii\caching\TagDependency;
 
 class PageStatistics extends Widget
 {
@@ -24,6 +29,10 @@ class PageStatistics extends Widget
     public ?int $nextPagesLimit = null;
 
     public ?string $type = null;
+
+    public ?bool $useAjax = null;
+
+    public ?int $autoRefreshWidget = null;
 
     /**
      * @inheritDoc
@@ -92,7 +101,9 @@ class PageStatistics extends Widget
         $pageRecord = PageVisitsRecord::find()->where(['id' => $this->pageId])->one();
 
         /** @var PageVisitsRecord|null  $pageRecord */
-        if ($pageRecord) {
+        if (!$pageRecord) {
+            return '';
+        } else {
             $siteId = $pageRecord->siteId;
             // If site is not available
             $site = Craft::$app->sites->getSiteById($siteId);
@@ -108,29 +119,62 @@ class PageStatistics extends Widget
             if (!is_array($this->items)) {
                 return '';
             }
-
-            $results = Counter::$plugin->pages->visits($pageRecord->page, '*', []);
-            unset($results['debugMessage']);
-            $items = $this->items ?? [];
-            foreach ($results as $key => $result) {
-                if (in_array($key, $items)) {
-                    if ($key == 'allIgnoreInterval') {
-                        $key = Craft::t('counter', 'All (ignore interval)');
-                    } else {
-                        $key = preg_replace('/([A-Z])/', ' $1', $key);
-                        $key = craft::t('counter', HelpersStringHelper::toSentenceCase($key));
-                    }
-                    $pageVisits[$key] = $result;
-                }
-            }
         }
 
         $view = Craft::$app->getView();
         $id = 'page-statistics' . StringHelper::randomString();
         $namespaceId = $view->namespaceInputId($id);
         $view->registerAssetBundle(CounterWidgetTableAsset::class);
+        $widget = $this;
 
-        return $view->renderTemplate('counter/_components/widgets/page-statistics/body', compact('namespaceId', 'pageVisits'));
+        if (!$widget->useAjax) {
+            $page = $pageRecord->page;
+            $cache = Craft::$app->getCache();
+            $cacheKey = 'counter-plugin-widget-' . $widget->id;
+            $pageVisits = $cache->get($cacheKey);
+            if ($pageVisits === false) {
+                $settings = Counter::$plugin->getSettings();
+                /** @var Settings $settings */
+                $cacheWidgetsSeconds = $settings->cacheWidgetsSeconds;
+                if (!$cacheWidgetsSeconds) {
+                    $dbDependency = new DbDependency([
+                        'sql' => 'SELECT dateUpdated FROM {{%counter_page_visits}} where page=:page', 'params' => [':page' => $page],
+                    ]);
+                }
+                $expressionDependency = new ExpressionDependency([
+                    'expression' => 'date("Y-m-d")',
+                ]);
+                $results = Counter::$plugin->pages->visits($page, '*', []);
+                unset($results['debugMessage']);
+                $items = $widget->items ?? [];
+                $pageVisits = [];
+                foreach ($results as $key => $result) {
+                    if (in_array($key, $items)) {
+                        if ($key == 'allIgnoreInterval') {
+                            $key = Craft::t('counter', 'All (ignore interval)');
+                        } else {
+                            $key = preg_replace('/([A-Z])/', ' $1', $key);
+                            $key = craft::t('counter', HelpersStringHelper::toSentenceCase($key));
+                        }
+                        $pageVisit['title'] = $key;
+                        $pageVisit['value'] = $result;
+                        $pageVisits[] = $pageVisit;
+                    }
+                }
+                $dependencies = [];
+                if (isset($dbDependency)) {
+                    $dependencies[] = $dbDependency;
+                }
+                $dependencies[] = $expressionDependency;
+                $dependencies[] = new TagDependency(['tags' => 'counter-plugin']);
+                $cache->set($cacheKey, $pageVisits, $cacheWidgetsSeconds, new ChainedDependency([
+                    'dependencies' => $dependencies,
+                ]));
+            }
+            return $view->renderTemplate('counter/_components/widgets/page-statistics/body', compact('namespaceId', 'pageVisits', 'id'));
+        } else {
+            return $view->renderTemplate('counter/_components/widgets/page-statistics/body-ajax', compact('widget', 'namespaceId', 'id'));
+        }
     }
 
     /**

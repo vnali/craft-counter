@@ -4,12 +4,18 @@ namespace vnali\counter\widgets;
 
 use Craft;
 use craft\base\Widget;
+use craft\db\Query;
 use craft\helpers\StringHelper;
 use Exception;
 use vnali\counter\assets\CounterWidgetTableAsset;
 use vnali\counter\Counter;
 use vnali\counter\helpers\StringHelper as CounterStringHelper;
+use vnali\counter\models\Settings;
 use vnali\counter\validators\SiteValidator;
+use yii\caching\ChainedDependency;
+use yii\caching\DbDependency;
+use yii\caching\ExpressionDependency;
+use yii\caching\TagDependency;
 
 class DecliningPages extends Widget
 {
@@ -20,6 +26,10 @@ class DecliningPages extends Widget
     public ?string $declineType = 'percentage';
 
     public int $limit = 5;
+
+    public ?bool $useAjax = null;
+
+    public ?int $autoRefreshWidget = null;
 
     /**
      * @inheritDoc
@@ -123,8 +133,6 @@ class DecliningPages extends Widget
             }
         }
 
-        $decliningPages = Counter::$plugin->pages->declining($this->dateRange, $this->siteId, $this->declineType, $this->limit);
-
         $view = Craft::$app->getView();
         $id = 'declining-pages' . StringHelper::randomString();
         $namespaceId = $view->namespaceInputId($id);
@@ -132,7 +140,44 @@ class DecliningPages extends Widget
 
         $widget = $this;
 
-        return $view->renderTemplate('counter/_components/widgets/declining-pages/body', compact('widget', 'id', 'decliningPages', 'namespaceId'));
+        if (!$widget->useAjax) {
+            $cache = Craft::$app->getCache();
+            $cacheKey = 'counter-plugin-widget-' . $widget->id;
+            $decliningPages = $cache->get($cacheKey);
+            if ($decliningPages === false) {
+                $settings = Counter::$plugin->getSettings();
+                /** @var Settings $settings */
+                $cacheWidgetsSeconds = $settings->cacheWidgetsSeconds;
+                if (!$cacheWidgetsSeconds) {
+                    $query = (new Query())
+                        ->select(['max(id)'])
+                        ->from('{{%counter_visitors}}');
+                    if ($widget->siteId != '*') {
+                        $query->where(['siteId' => $widget->siteId]);
+                    }
+                    $rawQuery = $query->createCommand()->getRawSql();
+                    $dbDependency = new DbDependency([
+                        'sql' => $rawQuery,
+                    ]);
+                }
+                $expressionDependency = new ExpressionDependency([
+                    'expression' => 'date("Y-m-d")',
+                ]);
+                $dependencies = [];
+                if (isset($dbDependency)) {
+                    $dependencies[] = $dbDependency;
+                }
+                $dependencies[] = $expressionDependency;
+                $dependencies[] = new TagDependency(['tags' => 'counter-plugin']);
+                $decliningPages = Counter::$plugin->pages->declining($this->dateRange, $this->siteId, $this->declineType, $this->limit);
+                $cache->set($cacheKey, $decliningPages, $cacheWidgetsSeconds, new ChainedDependency([
+                    'dependencies' => $dependencies,
+                ]));
+            }
+            return $view->renderTemplate('counter/_components/widgets/declining-pages/body', compact('widget', 'id', 'decliningPages', 'namespaceId'));
+        } else {
+            return $view->renderTemplate('counter/_components/widgets/declining-pages/body-ajax', compact('widget', 'id', 'namespaceId'));
+        }
     }
 
     /**
@@ -168,7 +213,7 @@ class DecliningPages extends Widget
         $rules[] = [['dateRange'], 'safe'];
         $rules[] = [['limit'], 'integer', 'min' => 1, 'max' => 20];
         $rules[] = [['siteId'], SiteValidator::class, 'skipOnEmpty' => false];
-    
+
         return $rules;
     }
 }

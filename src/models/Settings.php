@@ -13,6 +13,8 @@ class Settings extends Model
 
     public ?bool $anonymizeIp = true;
 
+    public ?int $cacheWidgetsSeconds = 0;
+
     public ?bool $disableCountController = null;
 
     public ?bool $ignoreAllUsers = null;

@@ -4,6 +4,7 @@ namespace vnali\counter\widgets;
 
 use Craft;
 use craft\base\Widget;
+use craft\db\Query;
 use craft\helpers\DateTimeHelper;
 use craft\helpers\StringHelper;
 use Exception;
@@ -14,6 +15,10 @@ use vnali\counter\helpers\StringHelper as CounterStringHelper;
 use vnali\counter\models\Settings;
 use vnali\counter\stats\MaxOnline as MaxOnlineStat;
 use vnali\counter\validators\SiteValidator;
+use yii\caching\ChainedDependency;
+use yii\caching\DbDependency;
+use yii\caching\ExpressionDependency;
+use yii\caching\TagDependency;
 
 class MaxOnline extends Widget
 {
@@ -22,10 +27,14 @@ class MaxOnline extends Widget
     private ?MaxOnlineStat $_stat = null;
 
     public ?string $siteId = null;
-    
+
     public ?bool $showChart = null;
 
     public ?bool $showVisitor = null;
+
+    public ?bool $useAjax = null;
+
+    public ?int $autoRefreshWidget = null;
 
     /**
      * @inheritDoc
@@ -143,16 +152,55 @@ class MaxOnline extends Widget
             }
         }
 
-        list($maxOnline, $maxOnlineDate, $labels, $maxOnlineData, $visitorsData, $showVisitorOnChart) = $this->_stat->get();
-        $timeFrame = $this->_stat->getDateRangeWording();
         $widget = $this;
-
         $view = Craft::$app->getView();
         $id = 'max-online' . StringHelper::randomString();
         $namespaceId = $view->namespaceInputId($id);
         $view->registerAssetBundle(CounterWidgetChartAsset::class);
 
-        return $view->renderTemplate('counter/_components/widgets/maxOnline/body', compact('widget', 'labels', 'maxOnline', 'maxOnlineDate', 'maxOnlineData', 'visitorsData', 'timeFrame', 'namespaceId', 'showVisitorOnChart'));
+        if (!$widget->useAjax) {
+            $cache = Craft::$app->getCache();
+            $cacheKey = 'counter-plugin-widget-' . $widget->id;
+            $data = $cache->get($cacheKey);
+            if ($data !== false) {
+                list($maxOnline, $maxOnlineDate, $labels, $maxOnlineData, $visitorsData, $showVisitorOnChart) = $data;
+            } else {
+                $settings = Counter::$plugin->getSettings();
+                /** @var Settings $settings */
+                $cacheWidgetsSeconds = $settings->cacheWidgetsSeconds;
+                if (!$cacheWidgetsSeconds) {
+                    // db dependency
+                    $query = (new Query())
+                        ->select(['max(id)'])
+                        ->from('{{%counter_visitors}}');
+                    if ($widget->siteId != '*') {
+                        $query->where(['siteId' => $widget->siteId]);
+                    }
+                    $rawQuery = $query->createCommand()->getRawSql();
+                    $dbDependency = new DbDependency([
+                        'sql' => $rawQuery,
+                    ]);
+                }
+                // expression dependency
+                $expressionDependency = new ExpressionDependency([
+                    'expression' => 'date("Y-m-d")',
+                ]);
+
+                $dependencies = [];
+                if (isset($dbDependency)) {
+                    $dependencies[] = $dbDependency;
+                }
+                $dependencies[] = $expressionDependency;
+                $dependencies[] = new TagDependency(['tags' => 'counter-plugin']);
+                list($maxOnline, $maxOnlineDate, $labels, $maxOnlineData, $visitorsData, $showVisitorOnChart) = $this->_stat->get();
+                $cache->set($cacheKey, [$maxOnline, $maxOnlineDate, $labels, $maxOnlineData, $visitorsData, $showVisitorOnChart], $cacheWidgetsSeconds, new ChainedDependency([
+                    'dependencies' => $dependencies,
+                ]));
+            }
+            return $view->renderTemplate('counter/_components/widgets/maxOnline/body', compact('widget', 'labels', 'maxOnline', 'maxOnlineDate', 'maxOnlineData', 'visitorsData', 'namespaceId', 'showVisitorOnChart'));
+        } else {
+            return $view->renderTemplate('counter/_components/widgets/maxOnline/body-ajax', compact('widget', 'id', 'namespaceId'));
+        }
     }
 
     /**

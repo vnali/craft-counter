@@ -16,6 +16,10 @@ class Online extends Widget
 
     public int $onlineThreshold = 60;
 
+    public ?bool $useAjax = null;
+
+    public ?int $autoRefreshWidget = null;
+
     /**
      * @inheritDoc
      * @throws Exception
@@ -113,14 +117,19 @@ class Online extends Widget
             }
         }
         $onlineThreshold = $this->onlineThreshold;
-        $number = Counter::$plugin->counter->onlineVisitors($this->siteId, $this->onlineThreshold);
 
+        $widget = $this;
         $view = Craft::$app->getView();
         $id = 'online' . StringHelper::randomString();
         $namespaceId = $view->namespaceInputId($id);
         $view->registerAssetBundle(CounterWidgetChartAsset::class);
 
-        return $view->renderTemplate('counter/_components/widgets/online/body', compact('number', 'onlineThreshold', 'namespaceId'));
+        if (!$widget->useAjax) {
+            $number = Counter::$plugin->counter->onlineVisitors($this->siteId, $this->onlineThreshold);
+            return $view->renderTemplate('counter/_components/widgets/online/body', compact('number', 'onlineThreshold', 'namespaceId'));
+        } else {
+            return $view->renderTemplate('counter/_components/widgets/online/body-ajax', compact('widget', 'namespaceId'));
+        }
     }
 
     /**

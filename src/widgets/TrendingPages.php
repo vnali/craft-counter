@@ -4,12 +4,18 @@ namespace vnali\counter\widgets;
 
 use Craft;
 use craft\base\Widget;
+use craft\db\Query;
 use craft\helpers\StringHelper;
 use Exception;
 use vnali\counter\assets\CounterWidgetTableAsset;
 use vnali\counter\Counter;
 use vnali\counter\helpers\StringHelper as CounterStringHelper;
+use vnali\counter\models\Settings;
 use vnali\counter\validators\SiteValidator;
+use yii\caching\ChainedDependency;
+use yii\caching\DbDependency;
+use yii\caching\ExpressionDependency;
+use yii\caching\TagDependency;
 
 class TrendingPages extends Widget
 {
@@ -22,6 +28,10 @@ class TrendingPages extends Widget
     public ?bool $ignoreNewPages = null;
 
     public int $limit = 5;
+
+    public ?bool $useAjax = null;
+
+    public ?int $autoRefreshWidget = null;
 
     /**
      * @inheritDoc
@@ -125,8 +135,6 @@ class TrendingPages extends Widget
             }
         }
 
-        $trendingPages = Counter::$plugin->pages->trending($this->dateRange, $this->siteId, $this->growthType, $this->ignoreNewPages, $this->limit);
-        
         $now = null;
         $before = null;
         switch ($this->dateRange) {
@@ -150,15 +158,51 @@ class TrendingPages extends Widget
                 # code...
                 break;
         }
-        
+
         $view = Craft::$app->getView();
         $id = 'trending-pages' . StringHelper::randomString();
         $namespaceId = $view->namespaceInputId($id);
         $view->registerAssetBundle(CounterWidgetTableAsset::class);
-
         $widget = $this;
 
-        return $view->renderTemplate('counter/_components/widgets/trending-pages/body', compact('widget', 'trendingPages', 'id', 'namespaceId', 'now', 'before'));
+        if (!$widget->useAjax) {
+            $cache = Craft::$app->getCache();
+            $cacheKey = 'counter-plugin-widget-' . $widget->id;
+            $trendingPages = $cache->get($cacheKey);
+            if ($trendingPages === false) {
+                $settings = Counter::$plugin->getSettings();
+                /** @var Settings $settings */
+                $cacheWidgetsSeconds = $settings->cacheWidgetsSeconds;
+                if (!$cacheWidgetsSeconds) {
+                    $query = (new Query())
+                        ->select(['max(id)'])
+                        ->from('{{%counter_visitors}}');
+                    if ($widget->siteId != '*') {
+                        $query->where(['siteId' => $widget->siteId]);
+                    }
+                    $rawQuery = $query->createCommand()->getRawSql();
+                    $dbDependency = new DbDependency([
+                        'sql' => $rawQuery,
+                    ]);
+                }
+                $expressionDependency = new ExpressionDependency([
+                    'expression' => 'date("Y-m-d")',
+                ]);
+                $dependencies = [];
+                if (isset($dbDependency)) {
+                    $dependencies[] = $dbDependency;
+                }
+                $dependencies[] = $expressionDependency;
+                $dependencies[] = new TagDependency(['tags' => 'counter-plugin']);
+                $trendingPages = Counter::$plugin->pages->trending($this->dateRange, $this->siteId, $this->growthType, $this->ignoreNewPages, $this->limit);
+                $cache->set($cacheKey, $trendingPages, $cacheWidgetsSeconds, new ChainedDependency([
+                    'dependencies' => $dependencies,
+                ]));
+            }
+            return $view->renderTemplate('counter/_components/widgets/trending-pages/body', compact('widget', 'id', 'namespaceId', 'trendingPages', 'now', 'before'));
+        } else {
+            return $view->renderTemplate('counter/_components/widgets/trending-pages/body-ajax', compact('widget', 'namespaceId', 'now', 'before'));
+        }
     }
 
     /**

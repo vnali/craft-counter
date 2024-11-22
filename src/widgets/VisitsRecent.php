@@ -4,14 +4,21 @@ namespace vnali\counter\widgets;
 
 use Craft;
 use craft\base\Widget;
+use craft\db\Query;
 use craft\helpers\DateTimeHelper;
 use craft\helpers\StringHelper;
 use Exception;
 use vnali\counter\assets\CounterWidgetChartAsset;
 use vnali\counter\base\DateWidgetTrait;
+use vnali\counter\Counter;
 use vnali\counter\helpers\StringHelper as CounterStringHelper;
+use vnali\counter\models\Settings;
 use vnali\counter\stats\VisitsRecent as VisitsRecentStats;
 use vnali\counter\validators\SiteValidator;
+use yii\caching\ChainedDependency;
+use yii\caching\DbDependency;
+use yii\caching\ExpressionDependency;
+use yii\caching\TagDependency;
 
 class VisitsRecent extends Widget
 {
@@ -28,6 +35,10 @@ class VisitsRecent extends Widget
     public ?bool $showVisitor = null;
 
     public ?string $preferredInterval = null;
+
+    public ?bool $useAjax = null;
+
+    public ?int $autoRefreshWidget = null;
 
     /**
      * @inheritDoc
@@ -142,16 +153,68 @@ class VisitsRecent extends Widget
             }
         }
 
-        list($number, $label, $visitsData, $visitorsData, $showVisitorOnChart) = $this->_stat->get();
-        $timeFrame = $this->_stat->getDateRangeWording();
         $widget = $this;
-
         $view = Craft::$app->getView();
         $id = 'visits-recent' . StringHelper::randomString();
         $namespaceId = $view->namespaceInputId($id);
         $view->registerAssetBundle(CounterWidgetChartAsset::class);
 
-        return $view->renderTemplate('counter/_components/widgets/visitsRecent/body', compact('widget', 'number', 'label', 'visitsData', 'visitorsData', 'showVisitorOnChart', 'timeFrame', 'namespaceId'));
+        if (!$widget->useAjax) {
+            $cache = Craft::$app->getCache();
+            $cacheKey = 'counter-plugin-widget-' . $widget->id;
+            $data = $cache->get($cacheKey);
+            if ($data !== false) {
+                list($number, $labels, $visitsData, $visitorsData, $showVisitorOnChart) = $data;
+            } else {
+                $settings = Counter::$plugin->getSettings();
+                /** @var Settings $settings */
+                $cacheWidgetsSeconds = $settings->cacheWidgetsSeconds;
+                if (!$cacheWidgetsSeconds) {
+                    // db dependency
+                    if ($widget->dateRange == 'thisHour' || $widget->dateRange == 'today') {
+                        $query = (new Query())
+                            ->select(['max(id)'])
+                            ->from('{{%counter_visitors}}');
+                        if ($widget->siteId != '*') {
+                            $query->where(['siteId' => $widget->siteId]);
+                        }
+                        $rawQuery = $query->createCommand()->getRawSql();
+                        $dbDependency = new DbDependency([
+                            'sql' => $rawQuery,
+                        ]);
+                    }
+                }
+                // expression dependency
+                if ($widget->dateRange == 'today' || $widget->dateRange == 'yesterday') {
+                    $expressionDependency = new ExpressionDependency([
+                        'expression' => 'date("Y-m-d")',
+                    ]);
+                } else {
+                    $expressionDependency = new ExpressionDependency([
+                        'expression' => 'date("Y-m-d H")',
+                    ]);
+                }
+
+                $dependencies = [];
+                if (isset($dbDependency)) {
+                    $dependencies[] = $dbDependency;
+                }
+                $dependencies[] = $expressionDependency;
+                $dependencies[] = new TagDependency(['tags' => 'counter-plugin']);
+                list($number, $labels, $visitsData, $visitorsData, $showVisitorOnChart) = $this->_stat->get();
+
+                // force cacheWidgetsSeconds to 0 for past date ranges.
+                if ($widget->dateRange == 'yesterday' || $widget->dateRange == 'previousHour') {
+                    $cacheWidgetsSeconds = 0;
+                }
+                $cache->set($cacheKey, [$number, $labels, $visitsData, $visitorsData, $showVisitorOnChart], $cacheWidgetsSeconds, new ChainedDependency([
+                    'dependencies' => $dependencies,
+                ]));
+            }
+            return $view->renderTemplate('counter/_components/widgets/visitsRecent/body', compact('widget', 'namespaceId', 'number', 'labels', 'visitsData', 'visitorsData', 'showVisitorOnChart'));
+        } else {
+            return $view->renderTemplate('counter/_components/widgets/visitsRecent/body-ajax', compact('widget', 'namespaceId'));
+        }
     }
 
     /**

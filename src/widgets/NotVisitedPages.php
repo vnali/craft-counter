@@ -4,6 +4,7 @@ namespace vnali\counter\widgets;
 
 use Craft;
 use craft\base\Widget;
+use craft\db\Query;
 use craft\helpers\StringHelper;
 use Exception;
 use vnali\counter\assets\CounterWidgetTableAsset;
@@ -11,6 +12,10 @@ use vnali\counter\Counter;
 use vnali\counter\helpers\StringHelper as CounterStringHelper;
 use vnali\counter\models\Settings;
 use vnali\counter\validators\SiteValidator;
+use yii\caching\ChainedDependency;
+use yii\caching\DbDependency;
+use yii\caching\ExpressionDependency;
+use yii\caching\TagDependency;
 
 class NotVisitedPages extends Widget
 {
@@ -23,6 +28,10 @@ class NotVisitedPages extends Widget
     public ?bool $sortAsc = null;
 
     public ?string $calendar = null;
+
+    public ?bool $useAjax = null;
+
+    public ?int $autoRefreshWidget = null;
 
     /**
      * @inheritDoc
@@ -123,17 +132,51 @@ class NotVisitedPages extends Widget
                 }
             }
         }
-        $notVisitedPages = Counter::$plugin->pages->notVisited($this->dateRange, $this->siteId, $this->limit, $this->sortAsc, $this->calendar);
 
         $view = Craft::$app->getView();
-
         $id = 'not-visited-pages' . StringHelper::randomString();
         $namespaceId = $view->namespaceInputId($id);
         $view->registerAssetBundle(CounterWidgetTableAsset::class);
-
         $widget = $this;
 
-        return $view->renderTemplate('counter/_components/widgets/not-visited-pages/body', compact('widget', 'id', 'notVisitedPages', 'namespaceId'));
+        if (!$widget->useAjax) {
+            $cache = Craft::$app->getCache();
+            $cacheKey = 'counter-plugin-widget-' . $widget->id;
+            $notVisitedPages = $cache->get($cacheKey);
+            if ($notVisitedPages === false) {
+                $settings = Counter::$plugin->getSettings();
+                /** @var Settings $settings */
+                $cacheWidgetsSeconds = $settings->cacheWidgetsSeconds;
+                if (!$cacheWidgetsSeconds) {
+                    $query = (new Query())
+                        ->select(['max(id)'])
+                        ->from('{{%counter_visitors}}');
+                    if ($widget->siteId != '*') {
+                        $query->where(['siteId' => $widget->siteId]);
+                    }
+                    $rawQuery = $query->createCommand()->getRawSql();
+                    $dbDependency = new DbDependency([
+                        'sql' => $rawQuery,
+                    ]);
+                }
+                $expressionDependency = new ExpressionDependency([
+                    'expression' => 'date("Y-m-d")',
+                ]);
+                $dependencies = [];
+                if (isset($dbDependency)) {
+                    $dependencies[] = $dbDependency;
+                }
+                $dependencies[] = $expressionDependency;
+                $dependencies[] = new TagDependency(['tags' => 'counter-plugin']);
+                $notVisitedPages = Counter::$plugin->pages->notVisited($this->dateRange, $this->siteId, $this->limit, $this->sortAsc, $this->calendar);
+                $cache->set($cacheKey, $notVisitedPages, $cacheWidgetsSeconds, new ChainedDependency([
+                    'dependencies' => $dependencies,
+                ]));
+            }
+            return $view->renderTemplate('counter/_components/widgets/not-visited-pages/body', compact('widget', 'id', 'notVisitedPages', 'namespaceId'));
+        } else {
+            return $view->renderTemplate('counter/_components/widgets/not-visited-pages/body-ajax', compact('widget', 'id', 'namespaceId'));
+        }
     }
 
     /**

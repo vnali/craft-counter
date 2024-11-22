@@ -4,12 +4,18 @@ namespace vnali\counter\widgets;
 
 use Craft;
 use craft\base\Widget;
+use craft\db\Query;
 use craft\helpers\StringHelper;
 use Exception;
 use vnali\counter\assets\CounterWidgetTableAsset;
 use vnali\counter\Counter;
 use vnali\counter\helpers\StringHelper as CounterStringHelper;
+use vnali\counter\models\Settings;
 use vnali\counter\validators\SiteValidator;
+use yii\caching\ChainedDependency;
+use yii\caching\DbDependency;
+use yii\caching\ExpressionDependency;
+use yii\caching\TagDependency;
 
 class TopPages extends Widget
 {
@@ -18,6 +24,10 @@ class TopPages extends Widget
     public ?string $dateRange = 'today';
 
     public int $limit = 5;
+
+    public ?bool $useAjax = null;
+
+    public ?int $autoRefreshWidget = null;
 
     /**
      * @inheritDoc
@@ -119,17 +129,57 @@ class TopPages extends Widget
                 }
             }
         }
-        $topPages = Counter::$plugin->pages->top($this->dateRange, $this->siteId, $this->limit);
 
         $view = Craft::$app->getView();
-
         $id = 'top-pages' . StringHelper::randomString();
         $namespaceId = $view->namespaceInputId($id);
         $view->registerAssetBundle(CounterWidgetTableAsset::class);
-
         $widget = $this;
 
-        return $view->renderTemplate('counter/_components/widgets/top-pages/body', compact('widget', 'id', 'topPages', 'namespaceId'));
+        if (!$widget->useAjax) {
+            $cache = Craft::$app->getCache();
+            $cacheKey = 'counter-plugin-widget-' . $widget->id;
+            $topPages = $cache->get($cacheKey);
+            if ($topPages === false) {
+                $settings = Counter::$plugin->getSettings();
+                /** @var Settings $settings */
+                $cacheWidgetsSeconds = $settings->cacheWidgetsSeconds;
+                if (!$cacheWidgetsSeconds) {
+                    $query = (new Query())
+                        ->select(['max(id)'])
+                        ->from('{{%counter_visitors}}');
+                    if ($widget->siteId != '*') {
+                        $query->where(['siteId' => $widget->siteId]);
+                    }
+                    $rawQuery = $query->createCommand()->getRawSql();
+                    $dbDependency = new DbDependency([
+                        'sql' => $rawQuery,
+                    ]);
+                }
+                $expressionDependency = new ExpressionDependency([
+                    'expression' => 'date("Y-m-d")',
+                ]);
+                $dependencies = [];
+                if (isset($dbDependency)) {
+                    $dependencies[] = $dbDependency;
+                }
+                $dependencies[] = $expressionDependency;
+                $dependencies[] = new TagDependency(['tags' => 'counter-plugin']);
+                $topPages = Counter::$plugin->pages->top($this->dateRange, $this->siteId, $this->limit);
+
+                // force cacheWidgetsSeconds to 0 for past date ranges.
+                if ($widget->dateRange == 'yesterday') {
+                    $cacheWidgetsSeconds = 0;
+                }
+                $cache->set($cacheKey, $topPages, $cacheWidgetsSeconds, new ChainedDependency([
+                    'dependencies' => $dependencies,
+                ]));
+            }
+
+            return $view->renderTemplate('counter/_components/widgets/top-pages/body', compact('widget', 'id', 'namespaceId', 'topPages'));
+        } else {
+            return $view->renderTemplate('counter/_components/widgets/top-pages/body-ajax', compact('widget', 'id', 'namespaceId'));
+        }
     }
 
     /**

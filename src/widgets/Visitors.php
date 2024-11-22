@@ -4,6 +4,7 @@ namespace vnali\counter\widgets;
 
 use Craft;
 use craft\base\Widget;
+use craft\db\Query;
 use craft\helpers\DateTimeHelper;
 use craft\helpers\StringHelper;
 use Exception;
@@ -14,6 +15,10 @@ use vnali\counter\helpers\StringHelper as CounterStringHelper;
 use vnali\counter\models\Settings;
 use vnali\counter\stats\Visitors as VisitorsStat;
 use vnali\counter\validators\SiteValidator;
+use yii\caching\ChainedDependency;
+use yii\caching\DbDependency;
+use yii\caching\ExpressionDependency;
+use yii\caching\TagDependency;
 
 class Visitors extends Widget
 {
@@ -28,6 +33,10 @@ class Visitors extends Widget
     public ?string $visitorType = null;
 
     public ?string $preferredInterval = null;
+
+    public ?bool $useAjax = null;
+
+    public ?int $autoRefreshWidget = null;
 
     /**
      * @inheritDoc
@@ -142,16 +151,68 @@ class Visitors extends Widget
             }
         }
 
-        list($number, $label, $visitorsData) = $this->_stat->get();
-        $timeFrame = $this->_stat->getDateRangeWording();
         $widget = $this;
-
         $view = Craft::$app->getView();
         $id = 'visitors' . StringHelper::randomString();
         $namespaceId = $view->namespaceInputId($id);
         $view->registerAssetBundle(CounterWidgetChartAsset::class);
 
-        return $view->renderTemplate('counter/_components/widgets/visitors/body', compact('widget', 'number', 'label', 'visitorsData', 'timeFrame', 'namespaceId'));
+        if (!$widget->useAjax) {
+            $cache = Craft::$app->getCache();
+            $cacheKey = 'counter-plugin-widget-' . $widget->id;
+            $data = $cache->get($cacheKey);
+            if ($data !== false) {
+                list($number, $labels, $visitorsData) = $data;
+            } else {
+                $settings = Counter::$plugin->getSettings();
+                /** @var Settings $settings */
+                $cacheWidgetsSeconds = $settings->cacheWidgetsSeconds;
+                if (!$cacheWidgetsSeconds) {
+                    // db dependency
+                    if ($widget->dateRange == 'thisHour' || $widget->dateRange == 'today') {
+                        $query = (new Query())
+                            ->select(['max(id)'])
+                            ->from('{{%counter_visitors}}');
+                        if ($widget->siteId != '*') {
+                            $query->where(['siteId' => $widget->siteId]);
+                        }
+                        $rawQuery = $query->createCommand()->getRawSql();
+                        $dbDependency = new DbDependency([
+                            'sql' => $rawQuery,
+                        ]);
+                    }
+                }
+                // expression dependency
+                if ($widget->dateRange == 'today' || $widget->dateRange == 'yesterday') {
+                    $expressionDependency = new ExpressionDependency([
+                        'expression' => 'date("Y-m-d")',
+                    ]);
+                } else {
+                    $expressionDependency = new ExpressionDependency([
+                        'expression' => 'date("Y-m-d H")',
+                    ]);
+                }
+
+                $dependencies = [];
+                if (isset($dbDependency)) {
+                    $dependencies[] = $dbDependency;
+                }
+                $dependencies[] = $expressionDependency;
+                $dependencies[] = new TagDependency(['tags' => 'counter-plugin']);
+                list($number, $labels, $visitorsData) = $this->_stat->get();
+
+                // force cacheWidgetsSeconds to 0 for past date ranges.
+                if ($widget->dateRange == 'yesterday' || $widget->dateRange == 'previousHour') {
+                    $cacheWidgetsSeconds = 0;
+                }
+                $cache->set($cacheKey, [$number, $labels, $visitorsData], $cacheWidgetsSeconds, new ChainedDependency([
+                    'dependencies' => $dependencies,
+                ]));
+            }
+            return $view->renderTemplate('counter/_components/widgets/visitors/body', compact('widget', 'namespaceId', 'number', 'labels', 'visitorsData'));
+        } else {
+            return $view->renderTemplate('counter/_components/widgets/visitors/body-ajax', compact('widget', 'namespaceId'));
+        }
     }
 
     /**

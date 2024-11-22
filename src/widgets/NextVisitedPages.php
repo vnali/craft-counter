@@ -13,6 +13,9 @@ use vnali\counter\base\DateWidgetTrait;
 use vnali\counter\helpers\StringHelper as CounterStringHelper;
 use vnali\counter\records\PageVisitsRecord;
 use vnali\counter\stats\NextVisitedPages as NextVisitedPagesStats;
+use yii\caching\ChainedDependency;
+use yii\caching\ExpressionDependency;
+use yii\caching\TagDependency;
 
 class NextVisitedPages extends Widget
 {
@@ -27,6 +30,10 @@ class NextVisitedPages extends Widget
     public ?int $nextPagesLimit = null;
 
     public ?string $type = 'count';
+
+    public ?bool $useAjax = null;
+
+    public ?int $autoRefreshWidget = null;
 
     /**
      * @inheritDoc
@@ -131,13 +138,37 @@ class NextVisitedPages extends Widget
         $id = 'next-visited-pages' . StringHelper::randomString();
         $namespaceId = $view->namespaceInputId($id);
         $view->registerAssetBundle(CounterWidgetChartAsset::class);
-
-        $data = $this->_stat->get();
-        $labels = json_encode(array_keys($data));
-        $data = json_encode(array_values($data));
         $widget = $this;
+        $cache = Craft::$app->getCache();
 
-        return $view->renderTemplate('counter/_components/widgets/next-visited-pages/body', compact('namespaceId', 'widget', 'labels', 'data'));
+        if (!$widget->useAjax) {
+            $cacheKey = 'counter-plugin-widget-' . $this->id;
+            $results = $cache->get($cacheKey);
+            if ($results === false) {
+                if ($widget->dateRange == 'yesterday') {
+                    $expressionDependency = new ExpressionDependency([
+                        'expression' => 'date("Y-m-d")',
+                    ]);
+                } else {
+                    $expressionDependency = new ExpressionDependency([
+                        'expression' => 'date("Y-m-d H")',
+                    ]);
+                }
+    
+                $results = $this->_stat->get();
+                $cache->set($cacheKey, $results, 0, new ChainedDependency([
+                    'dependencies' => [
+                        $expressionDependency,
+                        new TagDependency(['tags' => 'counter-plugin']),
+                    ],
+                ]));
+            }
+            $labels = json_encode(array_keys($results));
+            $data = json_encode(array_values($results));
+            return $view->renderTemplate('counter/_components/widgets/next-visited-pages/body', compact('namespaceId', 'widget', 'labels', 'data'));
+        } else {
+            return $view->renderTemplate('counter/_components/widgets/next-visited-pages/body-ajax', compact('widget', 'namespaceId'));
+        }
     }
 
     /**

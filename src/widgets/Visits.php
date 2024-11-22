@@ -4,6 +4,7 @@ namespace vnali\counter\widgets;
 
 use Craft;
 use craft\base\Widget;
+use craft\db\Query;
 use craft\helpers\DateTimeHelper;
 use craft\helpers\StringHelper;
 use Exception;
@@ -14,6 +15,10 @@ use vnali\counter\helpers\StringHelper as CounterStringHelper;
 use vnali\counter\models\Settings;
 use vnali\counter\stats\Visits as VisitsStats;
 use vnali\counter\validators\SiteValidator;
+use yii\caching\ChainedDependency;
+use yii\caching\DbDependency;
+use yii\caching\ExpressionDependency;
+use yii\caching\TagDependency;
 
 class Visits extends Widget
 {
@@ -30,6 +35,10 @@ class Visits extends Widget
     public ?bool $showVisitor = null;
 
     public ?string $preferredInterval = null;
+
+    public ?bool $useAjax = null;
+
+    public ?int $autoRefreshWidget = null;
 
     /**
      * @inheritDoc
@@ -149,16 +158,55 @@ class Visits extends Widget
             }
         }
 
-        list($number, $label, $visitsData, $visitorsData, $showVisitorOnChart) = $this->_stat->get();
-        $timeFrame = $this->_stat->getDateRangeWording();
         $widget = $this;
-
         $view = Craft::$app->getView();
         $id = 'visits' . StringHelper::randomString();
         $namespaceId = $view->namespaceInputId($id);
         $view->registerAssetBundle(CounterWidgetChartAsset::class);
 
-        return $view->renderTemplate('counter/_components/widgets/visits/body', compact('widget', 'number', 'label', 'visitsData', 'visitorsData', 'showVisitorOnChart', 'timeFrame', 'namespaceId'));
+        if (!$widget->useAjax) {
+            $cache = Craft::$app->getCache();
+            $cacheKey = 'counter-plugin-widget-' . $widget->id;
+            $data = $cache->get($cacheKey);
+            if ($data !== false) {
+                list($number, $labels, $visitsData, $visitorsData, $showVisitorOnChart) = $data;
+            } else {
+                $settings = Counter::$plugin->getSettings();
+                /** @var Settings $settings */
+                $cacheWidgetsSeconds = $settings->cacheWidgetsSeconds;
+                if (!$cacheWidgetsSeconds) {
+                    // db dependency
+                    $query = (new Query())
+                        ->select(['max(id)'])
+                        ->from('{{%counter_visitors}}');
+                    if ($widget->siteId != '*') {
+                        $query->where(['siteId' => $widget->siteId]);
+                    }
+                    $rawQuery = $query->createCommand()->getRawSql();
+                    $dbDependency = new DbDependency([
+                        'sql' => $rawQuery,
+                    ]);
+                }
+                // expression dependency
+                $expressionDependency = new ExpressionDependency([
+                    'expression' => 'date("Y-m-d")',
+                ]);
+
+                $dependencies = [];
+                if (isset($dbDependency)) {
+                    $dependencies[] = $dbDependency;
+                }
+                $dependencies[] = $expressionDependency;
+                $dependencies[] = new TagDependency(['tags' => 'counter-plugin']);
+                list($number, $labels, $visitsData, $visitorsData, $showVisitorOnChart) = $this->_stat->get();
+                $cache->set($cacheKey, [$number, $labels, $visitsData, $visitorsData, $showVisitorOnChart], $cacheWidgetsSeconds, new ChainedDependency([
+                    'dependencies' => $dependencies,
+                ]));
+            }
+            return $view->renderTemplate('counter/_components/widgets/visits/body', compact('widget', 'namespaceId', 'number', 'labels', 'visitsData', 'visitorsData', 'showVisitorOnChart'));
+        } else {
+            return $view->renderTemplate('counter/_components/widgets/visits/body-ajax', compact('widget', 'namespaceId'));
+        }
     }
 
     /**
