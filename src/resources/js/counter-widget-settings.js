@@ -45,4 +45,15 @@
             $('.widget.new .visitors-widget div[data-attribute="preferredIntervalInput"]').css('display', 'none');
         }
     });
+
+    /*
+    $(document).on('change', '.widget.new  div[data-attribute="useAjax"] .lightswitch', function() {
+        var isEnabled = $(this).find('input').val();
+        if (isEnabled) {
+            $('.widget.new div[data-attribute="autoRefreshWidget"]').css('display', 'block');
+        } else {
+            $('.widget.new div[data-attribute="autoRefreshWidget"]').css('display', 'none');
+        }
+    });
+    */
 })();

@@ -22,11 +22,8 @@ class CounterWidgetChartAsset extends AssetBundle
         $this->sourcePath = "@vnali/counter/resources";
 
         $this->depends = [
+            CounterWidgetAsset::class,
             ChartJsAsset::class,
-        ];
-
-        $this->css = [
-            'css/counter-widget.css',
         ];
 
         parent::init();

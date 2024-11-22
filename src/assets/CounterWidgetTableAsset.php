@@ -22,11 +22,8 @@ class CounterWidgetTableAsset extends AssetBundle
         $this->sourcePath = "@vnali/counter/resources";
 
         $this->depends = [
+            CounterWidgetAsset::class,
             AdminTableAsset::class,
-        ];
-
-        $this->css = [
-            'css/counter-widget.css',
         ];
 
         parent::init();
