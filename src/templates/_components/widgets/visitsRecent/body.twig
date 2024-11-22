@@ -6,7 +6,7 @@
 <br>
 {% if widget.showChart is defined and widget.showChart %}
     <div>
-    <canvas id="{{ namespaceId }}"></canvas>
+        <canvas id="{{ namespaceId }}"></canvas>
     </div>
 
     {% js %}
@@ -15,7 +15,7 @@
     new Chart(ctx, {
         type: 'line',
         data: {
-        labels: {{ label|raw }},
+        labels: {{ labels|raw }},
         datasets: [{
             label: Craft.escapeHtml(Craft.t('counter', 'Visits')),
             data: {{ visitsData }},

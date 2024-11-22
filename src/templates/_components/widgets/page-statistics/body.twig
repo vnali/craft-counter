@@ -1,14 +1,25 @@
-<div class="counter-widget-stat">
-{% apply spaceless %}
-<table border="1">
-    <tbody>
-        {% for item, value in pageVisits %}
-        <tr>
-            <td>{{ item }}</td>
-            <td>{{ value }}</td>
-        </tr>
-        {% endfor %}
-    </tbody>
-</table>
-{% endapply %}
+<div class="counter-widget-stat counter-widget-table-wrapper">
+    <div id="{{ id }}"></div>
 </div>
+
+{% set tableData = [] %}
+
+{% for pageVisit in pageVisits %}
+    {% set tableData = tableData|merge([{
+        title: pageVisit.title,
+        value: pageVisit.value,
+    }]) %}
+{% endfor %}
+
+{% js %}
+var columns = [
+    { name: '__slot:title', title: Craft.escapeHtml(Craft.t('counter', 'Page')) },
+    { name: 'value', title: Craft.escapeHtml(Craft.t('counter', "value" )) },
+];
+
+new Craft.VueAdminTable({
+    columns: columns,
+    container: '#{{ id }}',
+    tableData: {{ tableData|json_encode|raw }}
+});
+{% endjs %}
