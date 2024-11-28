@@ -1,6 +1,6 @@
 # Release Notes for Counter plugin for Craft 5
 
-## Unreleased
+## 1.0.0-beta.1 - 2024-11-28
 
 - Added Craft 4 compatibility.
 
