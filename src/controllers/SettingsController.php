@@ -81,6 +81,15 @@ class SettingsController extends Controller
         $variables['groups'] = $groups;
         $variables['settings'] = $settings;
 
+        $currentVersion = Craft::$app->version;
+        $targetVersion = '5.0.0';
+        if (version_compare($currentVersion, $targetVersion, '>=')) {
+            $editionName = Craft::$app->edition->name;
+        } else {
+            $editionName = Craft::$app->getEditionName();
+        }
+        $variables['editionName'] = $editionName;
+
         return $this->renderTemplate(
             'counter/settings/_general',
             $variables
@@ -115,11 +124,11 @@ class SettingsController extends Controller
         $settings->ignoreBots = $this->request->getBodyParam('ignoreBots', $settings->ignoreBots);
         $settings->disableCountController = $this->request->getBodyParam('disableCountController', $settings->disableCountController);
         $settings->supportOutdatedBrowsers = $this->request->getBodyParam('supportOutdatedBrowsers', $settings->supportOutdatedBrowsers);
-        
+
         if (!isset($settings->keepVisitorsInSeconds)) {
             $settings->keepVisitorsInSeconds = -1;
         }
-        
+
         if (($settings->keepVisitorsInSeconds != -1)) {
             $validate = false;
             $errorMessage = Craft::t('counter', 'The keepVisitorsInSeconds value should be -1');

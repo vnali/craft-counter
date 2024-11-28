@@ -4,7 +4,7 @@
   "type": "craft-plugin",
   "version": "1.0.0-alpha.5",
   "license": "proprietary",
-  "keywords": ["counter", "visits", "visitors", "online", "statistics", "analytics"],
+  "keywords": ["counter", "visits", "visitors", "online", "statistics", "analytics", "view", "views"],
   "support": {
     "email": "vnali.dev@gmail.com",
     "issues": "https://github.com/vnali/craft-counter/issues?state=open",
@@ -13,8 +13,8 @@
     "rss": "https://github.com/vnali/craft-counter/releases.atom"
   },
   "require": {
-    "php": ">=8.2",
-    "craftcms/cms": "^5.0.0",
+    "php": ">=8.0.2",
+    "craftcms/cms": "^4.13|^5.0.0",
     "jaybizzle/crawler-detect": "^1.2"
   },
   "require-dev": {
@@ -41,7 +41,7 @@
   "config": {
     "sort-packages": true,
     "platform": {
-      "php": "8.2"
+      "php": "8.0.2"
     },
     "allow-plugins": {
       "yiisoft/yii2-composer": true,

@@ -63,7 +63,7 @@ class TopPages extends Widget
      */
     public static function icon(): ?string
     {
-        return Craft::getAlias('@vnali/counter/icon-mask.svg');
+        return Craft::getAlias('@vnali/counter/icon-mask-widget.svg');
     }
 
     /**

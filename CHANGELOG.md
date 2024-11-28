@@ -1,5 +1,9 @@
 # Release Notes for Counter plugin for Craft 5
 
+## Unreleased
+
+- Added Craft 4 compatibility.
+
 ## 1.0.0-alpha.5 - 2024-11-23
 
 > {tip} Please read [this announcement](https://github.com/vnali/craft-counter/discussions/1) before update.

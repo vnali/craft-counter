@@ -148,7 +148,7 @@
                 }) }}
             </div>
             <div class="grid-item item9">
-                {% if (craft.app.edition.name != 'Solo') and currentUser.can('editUsers') %}
+                {% if (editionName != 'Solo') and currentUser.can('editUsers') %}
                     {{ forms.elementSelectField({
                         label: 'Ignore selected users'|t('counter'),
                         id: 'ignoreUserIds',
@@ -161,7 +161,7 @@
                 {% endif %}
             </div>
             <div class="grid-item item10">
-                {% if (craft.app.edition.name != 'Solo') and currentUser.can('editUsers') %}
+                {% if (editionName != 'Solo') and currentUser.can('editUsers') %}
                     {{ forms.multiSelectField({
                         label: 'Ignore selected groups'|t('counter'),
                         id: 'ignoreGroups',
