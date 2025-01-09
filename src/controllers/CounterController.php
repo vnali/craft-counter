@@ -23,6 +23,9 @@ class CounterController extends Controller
      */
     public function beforeAction($action): bool
     {
+        if (Craft::$app->getConfig()->getGeneral()->headlessMode) {
+            $this->enableCsrfValidation = false;
+        }
         return parent::beforeAction($action);
     }
 
@@ -33,9 +36,20 @@ class CounterController extends Controller
      */
     public function actionCount(): void
     {
+        $request = Craft::$app->getRequest();
+
+        header('Access-Control-Allow-Origin: ' . $request->getOrigin());
+        header('Access-Control-Allow-Methods: POST, OPTIONS');
+        header('Access-Control-Allow-Headers: Accept, Content-Type');
+        // Handle preflight requests
+        
+        if (Craft::$app->request->isOptions) {
+            http_response_code(200);
+            exit; // Ensure no further processing occurs
+        }
+        
         $this->requirePostRequest();
         $this->requireAcceptsJson();
-        $request = Craft::$app->getRequest();
 
         $pluginSettings = Counter::$plugin->getSettings();
         // Disallow HTTP request if it is not necessary
@@ -76,6 +90,13 @@ class CounterController extends Controller
         if (!$valid) {
             craft::warning('Requested page origin does not match site base URLs');
             return;
+        }
+
+        if (Craft::$app->getConfig()->getGeneral()->headlessMode) {
+            $headlessToken = $request->getBodyParam('headlessToken');
+            if (!$pluginSettings->headlessToken || $pluginSettings->headlessToken != $headlessToken) {
+                return;
+            }
         }
 
         Counter::$plugin->counter->count($pageUrl, true);

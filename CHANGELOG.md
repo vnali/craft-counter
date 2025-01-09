@@ -1,5 +1,11 @@
 # Release Notes for Counter plugin for Craft 5
 
+## Unreleased
+
+- The counter plugin can be used when Craft is in headless mode.
+- The default value for the `visitsInterval` setting has been changed from 60 seconds to 1 second.
+- Fixed a bug where passing invalid data to the `visitsInterval` and `onlineThreshold` plugin settings caused errors.
+
 ## 1.0.0-beta.1 - 2024-11-28
 
 - Added Craft 4 compatibility.

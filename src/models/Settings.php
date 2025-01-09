@@ -17,6 +17,8 @@ class Settings extends Model
 
     public ?bool $disableCountController = null;
 
+    public ?string $headlessToken = null;
+
     public ?bool $ignoreAllUsers = null;
 
     public ?bool $ignoreBots = null;
@@ -35,7 +37,7 @@ class Settings extends Model
 
     public ?int $onlineThreshold = 60;
 
-    public ?int $visitsInterval = 60;
+    public ?int $visitsInterval = 1;
 
     public ?string $removeQueryParams = null;
     
@@ -52,6 +54,7 @@ class Settings extends Model
     public function rules(): array
     {
         $rules = parent::rules();
+        $rules[] = [['onlineThreshold', 'visitsInterval'], 'required'];
         $rules[] = [['removeQueryParams', 'siteSettings'], 'safe'];
         $rules[] = [['registerCounter', 'removeAllQueryParams', 'removeUrlFragment', 'ignoreAllUsers', 'ignoreBots', 'supportOutdatedBrowsers', 'disableCountController', 'anonymizeIp', 'ipInEvent', 'anonymizedIpInEvent'], 'in', 'range' => [0, 1]];
         $rules[] = [['onlineThreshold'], 'integer', 'min' => 1, 'max' => 600];

@@ -114,8 +114,8 @@ class SettingsController extends Controller
         if (!$settings->salt) {
             $settings->salt = StringHelper::randomString();
         }
-        $settings->onlineThreshold = $this->request->getBodyParam('onlineThreshold', $settings->onlineThreshold);
-        $settings->visitsInterval = $this->request->getBodyParam('visitsInterval', $settings->visitsInterval);
+        $settings->onlineThreshold = ($this->request->getBodyParam('onlineThreshold') != '') ? $this->request->getBodyParam('onlineThreshold') : null;
+        $settings->visitsInterval = ($this->request->getBodyParam('visitsInterval') != '') ? $this->request->getBodyParam('visitsInterval') : null;
         $settings->registerCounter = $this->request->getBodyParam('registerCounter', $settings->registerCounter);
         $settings->removeAllQueryParams = $this->request->getBodyParam('removeAllQueryParams', $settings->removeAllQueryParams);
         $settings->removeQueryParams = $this->request->getBodyParam('removeQueryParams', $settings->removeQueryParams);

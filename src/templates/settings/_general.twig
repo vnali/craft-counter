@@ -12,70 +12,78 @@
 		{{ redirectInput('counter/settings/general') }}
 		{{ csrfInput() }}
         <div class="grid-container">
-            <div class="grid-item item1">
-                {{ forms.lightswitchField({
-                    label: 'Register counter automatically'|t('counter'),
-                    id: 'registerCounter',
-                    name: 'registerCounter',
-                    required: false,
-                    errors: settings.getErrors('registerCounter'),
-                    value: 1,
-                    on: settings.registerCounter is defined ? settings.registerCounter,
-                    instructions: 'Specify whether the script for counting should be automatically registered on all site pages.'|t('counter'),
-                    tip: 'Otherwise, the counter should be used by registering the CounterAsset manually or the calling counter service, depending on the site’s caching policy.'|t('counter')
-                }) }}
-            </div>
-            <div class="grid-item item13">
-                {{ forms.lightswitchField({
-                    label: 'Compatibility with outdated browsers'|t('counter'),
-                    id: 'supportOutdatedBrowsers',
-                    name: 'supportOutdatedBrowsers',
-                    required: false,
-                    errors: settings.getErrors('supportOutdatedBrowsers'),
-                    value: 1,
-                    on: settings.supportOutdatedBrowsers is defined ? settings.supportOutdatedBrowsers,
-                    instructions: 'By enabling this option, the counter script will function in browsers such as IE11.'|t('counter'),
-                    tip: 'Disabling this option will make the page load faster.'|t('counter'),
-                }) }}
-            </div>
-            <div class="grid-item item14">
-                {{ forms.lightswitchField({
-                    label: 'Prevent HTTP requests for the counter.'|t('counter'),
-                    id: 'disableCountController',
-                    name: 'disableCountController',
-                    required: false,
-                    errors: settings.getErrors('disableCountController'),
-                    value: 1,
-                    on: settings.disableCountController is defined ? settings.disableCountController,
-                    instructions: 'Enable this option if your site does not have static cache enabled and you are calling the counter via services in Twig.'|t('counter'),
-                    tip: 'Enabling this option prevents access to the counter via the HTTP requests and registration of the counter asset.'|t('counter'),
-                }) }}
-            </div>
-            <div class="break-item break4">
-                <hr>
-            </div>
+            {% if not craft.app.config.general.headlessMode %}
+                <div class="grid-item item1">
+                    {{ forms.lightswitchField({
+                        label: 'Register counter automatically'|t('counter'),
+                        id: 'registerCounter',
+                        name: 'registerCounter',
+                        required: false,
+                        errors: settings.getErrors('registerCounter'),
+                        value: 1,
+                        on: settings.registerCounter is defined ? settings.registerCounter,
+                        instructions: 'Specify whether the script for counting should be automatically registered on all site pages.'|t('counter'),
+                        tip: 'Otherwise, the counter should be used by registering the CounterAsset manually or the calling counter service, depending on the site’s caching policy.'|t('counter')
+                    }) }}
+                </div>
+                <div class="grid-item item13">
+                    {{ forms.lightswitchField({
+                        label: 'Compatibility with outdated browsers'|t('counter'),
+                        id: 'supportOutdatedBrowsers',
+                        name: 'supportOutdatedBrowsers',
+                        required: false,
+                        errors: settings.getErrors('supportOutdatedBrowsers'),
+                        value: 1,
+                        on: settings.supportOutdatedBrowsers is defined ? settings.supportOutdatedBrowsers,
+                        instructions: 'By enabling this option, the counter script will function in browsers such as IE11.'|t('counter'),
+                        tip: 'Disabling this option will make the page load faster.'|t('counter'),
+                    }) }}
+                </div>
+                <div class="grid-item item14">
+                    {{ forms.lightswitchField({
+                        label: 'Prevent HTTP requests for the counter.'|t('counter'),
+                        id: 'disableCountController',
+                        name: 'disableCountController',
+                        required: false,
+                        errors: settings.getErrors('disableCountController'),
+                        value: 1,
+                        on: settings.disableCountController is defined ? settings.disableCountController,
+                        instructions: 'Enable this option if your site does not have static cache enabled and you are calling the counter via services in Twig.'|t('counter'),
+                        tip: 'Enabling this option prevents access to the counter via the HTTP requests and registration of the counter asset.'|t('counter'),
+                    }) }}
+                </div>
+                <div class="break-item break4">
+                    <hr>
+                </div>
+            {% endif %}
             <div class="grid-item item2">
                 {{ forms.textField({
+                    type: "number",
                     label: 'Visits interval'|t('counter'),
                     id: 'visitsInterval',
                     name: 'visitsInterval',
-                    required: false,
+                    inputmode: 'numeric',
+                    min: 0,
+                    max: 600,
+                    required: true,
                     errors: settings.getErrors('visitsInterval'),
                     value: settings.visitsInterval,
-                    on: settings.visitsInterval is defined ? settings.visitsInterval,
                     instructions: 'After how many seconds should a visitor’s visit be counted again?'|t('counter'),
                     tip: 'Insert 0 if you want to count every visit.'|t('counter'),
                 }) }}
             </div>
             <div class="grid-item item3">
                 {{ forms.textField({
+                    type: "number",
                     label: 'Online threshold in seconds'|t('counter'),
                     id: 'onlineThreshold',
                     name: 'onlineThreshold',
-                    required: false,
+                    inputmode: 'numeric',
+                    min: 1,
+                    max: 600,
+                    required: true,
                     errors: settings.getErrors('onlineThreshold'),
                     value: settings.onlineThreshold,
-                    on: settings.onlineThreshold is defined ? settings.onlineThreshold,
                     instructions: 'Consider the user as online if their activity is within this threshold.'|t('counter'),
                     tip: 'The minimum value is 1.'|t('counter'),
                 }) }}
