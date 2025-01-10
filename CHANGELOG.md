@@ -2,8 +2,8 @@
 
 ## Unreleased
 
-- The counter plugin can be used when Craft is in headless mode.
-- The default value for the `visitsInterval` setting has been changed from 60 seconds to 1 second.
+- The counter plugin can be used when Craft is in headless mode. [(#2)](https://github.com/vnali/craft-counter/discussions/2)
+- The default value for the `visitsInterval` setting has been changed from 60 seconds to 1 second. [(#2)](https://github.com/vnali/craft-counter/discussions/2)
 - Fixed a bug where passing invalid data to the `visitsInterval` and `onlineThreshold` plugin settings caused errors.
 
 ## 1.0.0-beta.1 - 2024-11-28
