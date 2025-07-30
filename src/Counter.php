@@ -17,6 +17,7 @@ use craft\helpers\UrlHelper;
 use craft\services\Dashboard;
 use craft\services\Gql;
 use craft\services\UserPermissions;
+use craft\services\Utilities;
 use craft\utilities\ClearCaches;
 use craft\web\twig\variables\CraftVariable;
 use craft\web\UrlManager;
@@ -34,6 +35,7 @@ use vnali\counter\models\Settings;
 use vnali\counter\services\counterService;
 use vnali\counter\services\pagesService;
 use vnali\counter\twig\CounterVariable;
+use vnali\counter\utilities\ImportDataUtility;
 use vnali\counter\widgets\AverageVisitors;
 use vnali\counter\widgets\DecliningPages;
 use vnali\counter\widgets\MaxOnline;
@@ -116,6 +118,19 @@ class Counter extends Plugin
                 $cache->delete('counter-plugin-widget-' . $widgetId);
             }
         );
+
+        $user = Craft::$app->getUser();
+        if ($user->checkPermission('counter-importData')) {
+            if (Craft::$app->env !== 'production') {
+                Event::on(
+                    Utilities::class,
+                    Utilities::EVENT_REGISTER_UTILITY_TYPES,
+                    function(RegisterComponentTypesEvent $event) {
+                        $event->types[] = ImportDataUtility::class;
+                    }
+                );
+            }
+        }
     }
 
     /**
@@ -206,6 +221,9 @@ class Counter extends Plugin
                 ];
                 $permissions['counter-accessWidgets'] = [
                     'label' => Craft::t('counter', 'Access plugin widgets'),
+                ];
+                $permissions['counter-importData'] = [
+                    'label' => Craft::t('counter', 'Import data'),
                 ];
                 $event->permissions[] = [
                     'heading' => Craft::t('counter', 'Counter'),

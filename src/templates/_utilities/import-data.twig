@@ -1,0 +1,19 @@
+{% import '_includes/forms' as forms %}
+
+<h2>{{ "Import from Views Work plugin"|t('counter') }}</h2>
+<form method="POST">
+    <p>
+    - {{ 'By using this utility, you can fetch element page views and import their URLs and statistics into the Counter plugin.'|t('counter') }}
+    </p>
+    {{ forms.checkboxField({
+        label: 'Import the sum of all element total visits as today’s site visits.'|t('counter'),
+        instructions: 'This feature is helpful for keeping previous overall site visits; however, it does not accurately reflect actual previous site traffic, as it imports data as today’s visits.'|t('counter'),
+        id: 'importSiteVisits',
+        name: 'importSiteVisits',
+        checked: true,
+    }) }}
+    {{ csrfInput() }}
+    <input type="hidden" name="action" value="counter/import/views-work">
+    <input type="submit" class="btn submit" value="{{ 'Import'|t('counter') }}">
+</form>
+<br>

@@ -62,7 +62,7 @@ class pagesService extends Component
             $site = $siteService->getSiteById($siteId);
             $siteUnique = $site->uid;
             if (isset($site)) {
-                if ($siteSettings[$siteUnique]['calendar']) {
+                if (isset($siteSettings[$siteUnique]['calendar']) && $siteSettings[$siteUnique]['calendar']) {
                     $calendarSystem = $siteSettings[$siteUnique]['calendar'];
                 } else {
                     $calendarSystem = 'gregorian';
@@ -371,7 +371,10 @@ class pagesService extends Component
                 $nowDates[$site->id] = DateTimeHelper::intlDate($now, $calendarSystem, $format);
             } else {
                 craft::warning('calendar is not specified for ' . $site->name);
-                $notAllowedSiteIds[] = $site->id;
+                // allow to gregorian be default
+                $calendarSystems[$site->id] = 'gregorian';
+                $nowDates[$site->id] = DateTimeHelper::intlDate($now, 'gregorian', $format);
+                //$notAllowedSiteIds[] = $site->id;
             }
         }
 
@@ -379,9 +382,11 @@ class pagesService extends Component
             $pageVisitsQuery->where(['siteId' => $siteId]);
         }
 
+        /*
         if (count($notAllowedSiteIds) > 0) {
             $pageVisitsQuery->andWhere(['not in', 'siteId', $notAllowedSiteIds]);
         }
+        */
 
         $pageVisitsQuery->andWhere(['not', ["lastVisit" => null]]);
         $pageVisitsRecords = $pageVisitsQuery->orderBy("$dateRange desc")->all();
@@ -612,7 +617,7 @@ class pagesService extends Component
 
         $sites = $siteService->getAllSites();
         $nowDates = [];
-        $notAllowedSiteIds = [];
+        //$notAllowedSiteIds = [];
         $calendarSystems = [];
         foreach ($sites as $site) {
             $siteUnique = $site->uid;
@@ -622,13 +627,17 @@ class pagesService extends Component
                 $nowDates[$site->id] = DateTimeHelper::intlDate($now, $calendarSystem, $format);
             } else {
                 craft::warning('calendar is not specified for ' . $site->name);
-                $notAllowedSiteIds[] = $site->id;
+                $calendarSystems[$site->id] = 'gregorian';
+                $nowDates[$site->id] = DateTimeHelper::intlDate($now, 'gregorian', $format);
+                //$notAllowedSiteIds[] = $site->id;
             }
         }
 
+        /*
         if (count($notAllowedSiteIds) > 0) {
             $query->andWhere(['not in', 'siteId', $notAllowedSiteIds]);
         }
+        */
 
         if ($analyze == 'trending') {
             $index = 'growth';

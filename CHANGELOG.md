@@ -1,5 +1,10 @@
 # Release Notes for Counter plugin for Craft 5
 
+## Unreleased
+
+- Added a utility to import statistics from the Views Work plugin. [(#1)](https://github.com/vnali/craft-counter-docs/issues/1)
+- Fixed a bug where widgets are not loaded when the plugin settings are not configured.
+
 ## 1.0.0-beta.2 - 2025-01-11
 
 - The counter plugin can be used when Craft is in headless mode. [(#2)](https://github.com/vnali/craft-counter/discussions/2)
