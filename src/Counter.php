@@ -120,7 +120,7 @@ class Counter extends Plugin
         );
 
         $user = Craft::$app->getUser();
-        if ($user->checkPermission('counter-importData')) {
+        if (Craft::$app->plugins->isPluginInstalled('views-work') && $user->checkPermission('counter-importData')) {
             if (Craft::$app->env !== 'production') {
                 Event::on(
                     Utilities::class,
