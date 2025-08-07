@@ -941,9 +941,7 @@ class pagesService extends Component
                     ]);
                     $dependencies = [];
                     $dependencies[] = new TagDependency(['tags' => 'counter-plugin']);
-                    if ($dbDependency) {
-                        $dependencies[] = $dbDependency;
-                    }
+                    $dependencies[] = $dbDependency;
                     $cache->set('counter-page-record-element-' . $pageRecord->id, $elementRecord, 3600, new ChainedDependency([
                         'dependencies' => $dependencies,
                     ]));
