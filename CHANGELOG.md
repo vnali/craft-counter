@@ -3,6 +3,8 @@
 ## Unreleased
 
 - Added a utility to import statistics from the Views Work plugin. [(#1)](https://github.com/vnali/craft-counter-docs/issues/1)
+- Added counter statistics to the entry and category index pages. [(#1)](https://github.com/vnali/craft-counter-docs/issues/1)
+- Added counter statistics to the entry and category GQL queries.
 - Fixed a bug where widgets are not loaded when the plugin settings are not configured.
 - Change the label of column in the page visits widget from value to Visits.
 

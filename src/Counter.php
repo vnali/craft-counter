@@ -3,9 +3,14 @@
 namespace vnali\counter;
 
 use Craft;
+use craft\base\Element;
 use craft\base\Plugin;
+use craft\elements\Category;
+use craft\elements\Entry;
+use craft\events\DefineGqlTypeFieldsEvent;
 use craft\events\RegisterCacheOptionsEvent;
 use craft\events\RegisterComponentTypesEvent;
+use craft\events\RegisterElementTableAttributesEvent;
 use craft\events\RegisterGqlDirectivesEvent;
 use craft\events\RegisterGqlQueriesEvent;
 use craft\events\RegisterGqlSchemaComponentsEvent;
@@ -13,6 +18,7 @@ use craft\events\RegisterGqlTypesEvent;
 use craft\events\RegisterUrlRulesEvent;
 use craft\events\RegisterUserPermissionsEvent;
 use craft\events\WidgetEvent;
+use craft\gql\TypeManager;
 use craft\helpers\UrlHelper;
 use craft\services\Dashboard;
 use craft\services\Gql;
@@ -21,6 +27,7 @@ use craft\services\Utilities;
 use craft\utilities\ClearCaches;
 use craft\web\twig\variables\CraftVariable;
 use craft\web\UrlManager;
+use GraphQL\Type\Definition\Type;
 use vnali\counter\assets\CounterAsset;
 use vnali\counter\gql\directives\DateConvert;
 use vnali\counter\gql\queries\CounterQuery;
@@ -36,6 +43,7 @@ use vnali\counter\services\counterService;
 use vnali\counter\services\pagesService;
 use vnali\counter\twig\CounterVariable;
 use vnali\counter\utilities\ImportDataUtility;
+use vnali\counter\utilities\ImportDataUtility4;
 use vnali\counter\widgets\AverageVisitors;
 use vnali\counter\widgets\DecliningPages;
 use vnali\counter\widgets\MaxOnline;
@@ -84,6 +92,9 @@ class Counter extends Plugin
         parent::init();
         self::$plugin = $this;
 
+        $currentVersion = Craft::$app->version;
+        $targetVersion = '5.0.0';
+
         $this->_registerPermissions();
         $this->_registerRules();
         $this->_registerVariables();
@@ -122,15 +133,134 @@ class Counter extends Plugin
         $user = Craft::$app->getUser();
         if (Craft::$app->plugins->isPluginInstalled('views-work') && $user->checkPermission('counter-importData')) {
             if (Craft::$app->env !== 'production') {
+                if (version_compare($currentVersion, $targetVersion, '>=')) {
+                    Event::on(
+                        Utilities::class,
+                        Utilities::EVENT_REGISTER_UTILITIES,
+                        function(RegisterComponentTypesEvent $event) {
+                            $event->types[] = ImportDataUtility::class;
+                        }
+                    );
+                } else {
+                    Event::on(
+                        Utilities::class,
+                        Utilities::EVENT_REGISTER_UTILITY_TYPES,
+                        function(RegisterComponentTypesEvent $event) {
+                            $event->types[] = ImportDataUtility4::class;
+                        }
+                    );
+                }
+            }
+        }
+
+        foreach ([Entry::class, Category::class] as $elementClass) {
+            Event::on(
+                $elementClass,
+                Element::EVENT_REGISTER_TABLE_ATTRIBUTES,
+                static function(RegisterElementTableAttributesEvent $event) {
+                    $event->tableAttributes['counterAllViews'] = [
+                        'label' => Craft::t('counter', 'All Time Views'),
+                    ];
+                    $event->tableAttributes['counterTodayViews'] = [
+                        'label' => Craft::t('counter', 'Today Views'),
+                    ];
+                    $event->tableAttributes['counterThisWeekViews'] = [
+                        'label' => Craft::t('counter', 'This Week Views'),
+                    ];
+                    $event->tableAttributes['counterThisMonthViews'] = [
+                        'label' => Craft::t('counter', 'This Month Views'),
+                    ];
+                    $event->tableAttributes['counterThisYearViews'] = [
+                        'label' => Craft::t('counter', 'This Year Views'),
+                    ];
+                    $event->tableAttributes['counterYesterdayViews'] = [
+                        'label' => Craft::t('counter', 'Yesterday Views'),
+                    ];
+                    $event->tableAttributes['counterPreviousWeekViews'] = [
+                        'label' => Craft::t('counter', 'Previous Week Views'),
+                    ];
+                    $event->tableAttributes['counterPreviousMonthViews'] = [
+                        'label' => Craft::t('counter', 'Previous Month Views'),
+                    ];
+                    $event->tableAttributes['counterPreviousYearViews'] = [
+                        'label' => Craft::t('counter', 'Previous Year Views'),
+                    ];
+                }
+            );
+
+            $columns = ['counterAllViews', 'counterTodayViews', 'counterThisWeekViews', 'counterThisMonthViews', 'counterThisYearViews', 'counterYesterdayViews', 'counterPreviousWeekViews', 'counterPreviousMonthViews', 'counterPreviousYearViews'];
+
+            if (version_compare($currentVersion, $targetVersion, '>=')) {
+                // Get the HTML for that attribute
                 Event::on(
-                    Utilities::class,
-                    Utilities::EVENT_REGISTER_UTILITY_TYPES,
-                    function(RegisterComponentTypesEvent $event) {
-                        $event->types[] = ImportDataUtility::class;
+                    $elementClass,
+                    Element::EVENT_DEFINE_ATTRIBUTE_HTML,
+                    function(\craft\events\DefineAttributeHtmlEvent $event) use ($columns) {
+                        if (!in_array($event->attribute, $columns)) {
+                            return;
+                        }
+                        $html = $this->_renderCustomCounterAttributes($event);
+                        $event->html = $html;
+                    }
+                );
+
+                // Provide a fallback to prevent error on inline editing
+                Event::on(
+                    $elementClass,
+                    Element::EVENT_DEFINE_INLINE_ATTRIBUTE_INPUT_HTML,
+                    static function(\craft\events\DefineAttributeHtmlEvent $event) use ($columns) {
+                        if (in_array($event->attribute, $columns)) {
+                            $event->html = '';
+                        }
+                    }
+                );
+            } else {
+                // Get the HTML for that attribute
+                Event::on(
+                    $elementClass,
+                    Element::EVENT_SET_TABLE_ATTRIBUTE_HTML,
+                    function(\craft\events\SetElementTableAttributeHtmlEvent $event) use ($columns) {
+                        if (!in_array($event->attribute, $columns)) {
+                            return;
+                        }
+                        $html = $this->_renderCustomCounterAttributes($event);
+                        $event->html = $html;
                     }
                 );
             }
         }
+    }
+
+    private function _renderCustomCounterAttributes($event)
+    {
+        $attribute = $event->attribute;
+        $element = $event->sender;
+        // if element does not have a url, set views to '', it it does, default is changed to '0'
+        $html = '';
+        try {
+            $elementId = $element->id;
+            $siteId = $element->siteId;
+            $site = Craft::$app->sites->getSiteById($siteId);
+            if ($site) {
+                $element = Craft::$app->elements->getElementById($elementId, null, $siteId);
+                if ($url = $element->getUrl()) {
+                    $data = Counter::$plugin->pages->visits($url, $siteId);
+
+                    if (str_starts_with($attribute, "counter")) {
+                        $attribute = substr($attribute, 7);
+                    }
+
+                    if (str_ends_with($attribute, "Views")) {
+                        $attribute = lcfirst(substr($attribute, 0, -5));
+                    }
+                    $html = $data[$attribute] ?? '0';
+                }
+            }
+        } catch (\Throwable $e) {
+            Craft::error($e, __METHOD__);
+            $html = $e->getMessage();
+        }
+        return $html;
     }
 
     /**
@@ -560,5 +690,97 @@ class Counter extends Plugin
                 ],
             ];
         });
+
+        Event::on(
+            TypeManager::class,
+            TypeManager::EVENT_DEFINE_GQL_TYPE_FIELDS,
+            function(DefineGqlTypeFieldsEvent $event) {
+                // Add counter attributes to all entries and categories
+                if ($event->typeName == 'EntryInterface' || $event->typeName == 'CategoryInterface') {
+                    $event->fields['todayViews'] = [
+                        'name' => 'todayViews',
+                        'type' => Type::int(),
+                        'resolve' => function($source, $arguments, $context, $resolveInfo) {
+                            return $this->_counterGqlColumns($source, $resolveInfo->fieldName);
+                        },
+                    ];
+                    $event->fields['thisWeekViews'] = [
+                        'name' => 'thisWeekViews',
+                        'type' => Type::int(),
+                        'resolve' => function($source, $arguments, $context, $resolveInfo) {
+                            return $this->_counterGqlColumns($source, $resolveInfo->fieldName);
+                        },
+                    ];
+                    $event->fields['thisMonthViews'] = [
+                        'name' => 'thisMonthViews',
+                        'type' => Type::int(),
+                        'resolve' => function($source, $arguments, $context, $resolveInfo) {
+                            return $this->_counterGqlColumns($source, $resolveInfo->fieldName);
+                        },
+                    ];
+                    $event->fields['thisYearViews'] = [
+                        'name' => 'thisYearViews',
+                        'type' => Type::int(),
+                        'resolve' => function($source, $arguments, $context, $resolveInfo) {
+                            return $this->_counterGqlColumns($source, $resolveInfo->fieldName);
+                        },
+                    ];
+                    $event->fields['allViews'] = [
+                        'name' => 'allViews',
+                        'type' => Type::int(),
+                        'resolve' => function($source, $arguments, $context, $resolveInfo) {
+                            return $this->_counterGqlColumns($source, $resolveInfo->fieldName);
+                        },
+                    ];
+                    $event->fields['yesterdayViews'] = [
+                        'name' => 'yesterdayViews',
+                        'type' => Type::int(),
+                        'resolve' => function($source, $arguments, $context, $resolveInfo) {
+                            return $this->_counterGqlColumns($source, $resolveInfo->fieldName);
+                        },
+                    ];
+                    $event->fields['previousWeekViews'] = [
+                        'name' => 'previousWeekViews',
+                        'type' => Type::int(),
+                        'resolve' => function($source, $arguments, $context, $resolveInfo) {
+                            return $this->_counterGqlColumns($source, $resolveInfo->fieldName);
+                        },
+                    ];
+                    $event->fields['previousMonthViews'] = [
+                        'name' => 'previousMonthViews',
+                        'type' => Type::int(),
+                        'resolve' => function($source, $arguments, $context, $resolveInfo) {
+                            return $this->_counterGqlColumns($source, $resolveInfo->fieldName);
+                        },
+                    ];
+                    $event->fields['previousYearViews'] = [
+                        'name' => 'previousYearViews',
+                        'type' => Type::int(),
+                        'resolve' => function($source, $arguments, $context, $resolveInfo) {
+                            return $this->_counterGqlColumns($source, $resolveInfo->fieldName);
+                        },
+                    ];
+                }
+            }
+        );
+    }
+
+    private function _counterGqlColumns($source, $attribute)
+    {
+        $elementId = $source->id;
+        $siteId = $source->siteId;
+        $site = Craft::$app->sites->getSiteById($siteId);
+        $return = null;
+        if ($site) {
+            $element = Craft::$app->elements->getElementById($elementId, null, $siteId);
+            if ($url = $element->getUrl()) {
+                $data = Counter::$plugin->pages->visits($url, $siteId);
+                if (str_ends_with($attribute, "Views")) {
+                    $attribute = lcfirst(substr($attribute, 0, -5));
+                }
+                $return = $data[$attribute] ?? '0';
+            }
+        }
+        return $return;
     }
 }
