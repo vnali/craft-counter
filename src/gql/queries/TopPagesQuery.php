@@ -36,6 +36,16 @@ class TopPagesQuery extends Query
                         $limit = $args['limit'];
                     }
 
+                    $showElementTitle = null;
+                    if (isset($args['showElementTitle'])) {
+                        $showElementTitle = $args['showElementTitle'];
+                    }
+
+                    $filters = null;
+                    if (isset($args['filters'])) {
+                        $filters = $args['filters'];
+                    }
+
                     // Check access to dateRange
                     if (!Gql::canQueryItem('topPages' . ucfirst($dateRange))) {
                         return [['debugMessage' => 'Selected dateRange is not allowed']];
@@ -67,7 +77,7 @@ class TopPagesQuery extends Query
                     // Reindex the array
                     $fields = array_values($fields);
 
-                    $result = Counter::$plugin->pages->top($dateRange, $siteId, $limit);
+                    $result = Counter::$plugin->pages->top($dateRange, $siteId, $limit, $showElementTitle, $filters);
                     return $result;
                 },
                 'description' => 'This query is used to query top pages.',

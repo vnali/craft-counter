@@ -8,6 +8,9 @@ namespace vnali\counter\services;
 
 use Craft;
 use craft\db\Query;
+use craft\elements\Category;
+use craft\elements\Entry;
+use craft\elements\Tag;
 use craft\helpers\DateTimeHelper as HelpersDateTimeHelper;
 use DateInterval;
 use DateTime;
@@ -19,6 +22,9 @@ use vnali\counter\helpers\DateTimeHelper;
 use vnali\counter\models\Settings;
 use vnali\counter\records\PageVisitsRecord;
 use yii\base\Component;
+use yii\caching\ChainedDependency;
+use yii\caching\DbDependency;
+use yii\caching\TagDependency;
 use yii\db\Expression;
 
 /**
@@ -295,9 +301,11 @@ class pagesService extends Component
      * @param string $dateRange
      * @param string|null $siteId
      * @param int|null $limit
+     * @param bool|null $showElementTitle
+     * @param array|null $filters
      * @return array|null
      */
-    public function top(?string $dateRange, ?string $siteId = null, ?int $limit = null): ?array
+    public function top(?string $dateRange, ?string $siteId = null, ?int $limit = null, ?bool $showElementTitle = false, ?array $filters = []): ?array
     {
         if (!$limit) {
             $limit = 20;
@@ -327,8 +335,8 @@ class pagesService extends Component
             case 'yesterday':
                 $format = 'yyyy/MM/dd';
                 break;
-                // Todo: implement this for other date ranges
-                /*
+            // Todo: implement this for other date ranges
+            /*
             case 'previousWeek':
                 $format = 'w';
                 break;
@@ -362,7 +370,7 @@ class pagesService extends Component
         $calendarSystems = [];
         $sites = $siteService->getAllSites();
         $pageVisitsQuery = PageVisitsRecord::find();
-        $notAllowedSiteIds = [];
+        // $notAllowedSiteIds = [];
         foreach ($sites as $key => $site) {
             $siteUnique = $site->uid;
             if (isset($siteSettings[$siteUnique]['calendar']) && $siteSettings[$siteUnique]['calendar']) {
@@ -422,12 +430,15 @@ class pagesService extends Component
             }
 
             if ($valid && ($pageVisitRecord->{$dateRange} > 0) && $count < $limit) {
-                $count++;
-                $visit = [];
-                $visit['page'] = $pageVisitRecord->page;
-                $visit['visits'] = $pageVisitRecord->{$dateRange};
-                $visit['debugMessage'] = 'ok';
-                $visits[] = $visit;
+                if ($this->_showPage($pageVisitRecord, $filters)) {
+                    $count++;
+                    $visit = [];
+                    $visit['page'] = !$showElementTitle ? $pageVisitRecord->page : $this->_pageTitle($pageVisitRecord);
+                    $visit['url'] = $pageVisitRecord->page;
+                    $visit['visits'] = $pageVisitRecord->{$dateRange};
+                    $visit['debugMessage'] = 'ok';
+                    $visits[] = $visit;
+                }
             }
 
             if (isset($visit['visits']) && $count >= $limit) {
@@ -438,6 +449,7 @@ class pagesService extends Component
 
         // if date range is yesterday, we also should calculate pages that visited yesterday but not visited today
         if ($dateRange == 'yesterday') {
+            $count = 0;
             $startDate = HelpersDateTimeHelper::toDateTime(strtotime('yesterday'));
             $startDate->setTime(0, 0);
             $startDate = $startDate->format('Y-m-d H:i:s');
@@ -448,7 +460,8 @@ class pagesService extends Component
             $pageVisitsQuery->andWhere(['<=', 'lastVisit', $endDate]);
             $pageVisitsQuery->andWhere(['>=', 'today', $low]); // Don't allow the top of this results to be smaller the bottom of previous
             $pageVisitsQuery->orderBy("today desc");
-            $pageVisitsQuery->limit($limit);
+            // commented limit because we have conditions for being element
+            // $pageVisitsQuery->limit($limit);
             $pageVisitsRecords = $pageVisitsQuery->all();
 
             foreach ($pageVisitsRecords as $pageVisitRecord) {
@@ -459,12 +472,20 @@ class pagesService extends Component
                     continue;
                 }
 
-                if (((int)$pageVisitRecord->today > 0)) {
-                    $visit = [];
-                    $visit['page'] = $pageVisitRecord->page;
-                    $visit['visits'] = $pageVisitRecord->today;
-                    $visit['debugMessage'] = 'ok';
-                    $visits[] = $visit;
+                if (((int)$pageVisitRecord->today > 0) && $count < $limit) {
+                    if ($this->_showPage($pageVisitRecord, $filters)) {
+                        $count++;
+                        $visit = [];
+                        $visit['page'] = !$showElementTitle ? $pageVisitRecord->page : $this->_pageTitle($pageVisitRecord);
+                        $visit['url'] = $pageVisitRecord->page;
+                        $visit['visits'] = $pageVisitRecord->today;
+                        $visit['debugMessage'] = 'ok';
+                        $visits[] = $visit;
+                    }
+                }
+
+                if ($count >= $limit) {
+                    break;
                 }
             }
 
@@ -816,5 +837,157 @@ class pagesService extends Component
         }
 
         return $pages;
+    }
+
+    /**
+     * Returns element title if page is related to an element
+     *
+     * @param PageVisitsRecord $pageRecord
+     * @return string
+     */
+    private static function _pageTitle(PageVisitsRecord $pageRecord): string
+    {
+        $title = $pageRecord->page;
+        $cache = Craft::$app->getCache();
+        $elementRecord = $cache->get('counter-page-record-element-' . $pageRecord->id);
+        if ($elementRecord === false) {
+            $siteId = $pageRecord->siteId;
+            $site = Craft::$app->sites->getSiteById($siteId);
+            if ($site) {
+                $siteUrl = $site->getBaseUrl();
+                $uri = str_replace($siteUrl, '', $pageRecord->page);
+
+                $currentVersion = Craft::$app->version;
+                $targetVersion = '5.0.0';
+                if (version_compare($currentVersion, $targetVersion, '>=')) {
+                    $query = (new \yii\db\Query())
+                        ->select('es.title')
+                        ->from(['es' => 'elements_sites'])
+                        ->innerJoin(['e' => 'elements'], 'e.id = es.elementId');
+                } else {
+                    $query = (new \yii\db\Query())
+                        ->select('c.title')
+                        ->from(['es' => 'elements_sites'])
+                        ->innerJoin(['e' => 'elements'], 'e.id = es.elementId')
+                        ->innerJoin(['c' => 'content'], 'c.elementId = e.id AND c.siteId = es.siteId');
+                }
+
+                $query->where([
+                    'es.siteId' => $siteId,
+                    'es.uri' => $uri,
+                    'e.draftId' => null,
+                    'e.revisionId' => null,
+                    'e.dateDeleted' => null,
+                ])
+                    ->limit(1);
+                $elementRecord = $query->one();
+            }
+        }
+        $title = ($elementRecord && $elementRecord['title']) ? $elementRecord['title'] : $title;
+        return $title;
+    }
+
+    /**
+     * Check if page should be shown in result
+     *
+     * @param PageVisitsRecord $pageRecord
+     * @param array $filters
+     * @return bool
+     */
+    private static function _showPage(PageVisitsRecord $pageRecord, ?array $filters = []): bool
+    {
+        if ($filters) {
+            $cache = Craft::$app->getCache();
+            $elementRecord = $cache->get('counter-page-record-element-' . $pageRecord->id);
+            if ($elementRecord === false) {
+                $siteId = $pageRecord->siteId;
+                $site = Craft::$app->sites->getSiteById($siteId);
+                if (!$site) {
+                    return false;
+                }
+                $siteUrl = $site->getBaseUrl();
+                $uri = str_replace($siteUrl, '', $pageRecord->page);
+
+                $currentVersion = Craft::$app->version;
+                $targetVersion = '5.0.0';
+                if (version_compare($currentVersion, $targetVersion, '>=')) {
+                    $query = (new \yii\db\Query())
+                        ->select('es.title, e.type, e.id')
+                        ->from(['es' => 'elements_sites'])
+                        ->innerJoin(['e' => 'elements'], 'e.id = es.elementId');
+                } else {
+                    $query = (new \yii\db\Query())
+                        ->select('c.title, e.type, e.id')
+                        ->from(['es' => 'elements_sites'])
+                        ->innerJoin(['e' => 'elements'], 'e.id = es.elementId')
+                        ->innerJoin(['c' => 'content'], 'c.elementId = e.id AND c.siteId = es.siteId');
+                }
+                $query->where([
+                    'es.siteId' => $siteId,
+                    'es.uri' => $uri,
+                    'e.draftId' => null,
+                    'e.revisionId' => null,
+                    'e.dateDeleted' => null,
+                ])->limit(1);
+                $elementRecord = $query->one();
+                if ($elementRecord) {
+                    $query = (new Query())
+                        ->select(['max(dateUpdated)'])
+                        ->from('{{%elements}}')
+                        ->where(['id' => $elementRecord['id']]);
+                    $rawQuery = $query->createCommand()->getRawSql();
+                    $dbDependency = new DbDependency([
+                        'sql' => $rawQuery,
+                    ]);
+                    $dependencies = [];
+                    $dependencies[] = new TagDependency(['tags' => 'counter-plugin']);
+                    if ($dbDependency) {
+                        $dependencies[] = $dbDependency;
+                    }
+                    $cache->set('counter-page-record-element-' . $pageRecord->id, $elementRecord, 3600, new ChainedDependency([
+                        'dependencies' => $dependencies,
+                    ]));
+                }
+            }
+
+            if (!$elementRecord) {
+                if (isset($filters['items']) && is_array($filters['items'])) {
+                    if (!in_array('page', $filters['items'])) {
+                        return false;
+                    }
+                }
+            } else {
+                if (isset($filters['items']) && is_array($filters['items'])) {
+                    $type = $elementRecord['type'];
+                    if ($type == Entry::class) {
+                        $type = 'entry';
+                    } elseif ($type == Category::class) {
+                        $type = 'category';
+                    } elseif ($type == Tag::class) {
+                        $type = 'tag';
+                    }
+                    $decodedItems = [];
+                    foreach ($filters['items'] as $item) {
+                        $decodedItems[] = urldecode($item);
+                    }
+
+                    if (!in_array($type, $decodedItems)) {
+                        return false;
+                    }
+                }
+                if (isset($filters['sectionHandles']) && $filters['sectionHandles']) {
+                    if ($elementRecord['type'] == Entry::class) {
+                        $entry = Entry::find()->id($elementRecord['id'])->one();
+                        if ($entry) {
+                            $sectionHandle = $entry->getSection()->handle;
+                            if (!$sectionHandle || !in_array($sectionHandle, $filters['sectionHandles'])) {
+                                return false;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        return true;
     }
 }

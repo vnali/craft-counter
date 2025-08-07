@@ -5,6 +5,9 @@ namespace vnali\counter\widgets;
 use Craft;
 use craft\base\Widget;
 use craft\db\Query;
+use craft\elements\Category;
+use craft\elements\Entry;
+use craft\elements\Tag;
 use craft\helpers\StringHelper;
 use Exception;
 use vnali\counter\assets\CounterWidgetTableAsset;
@@ -22,6 +25,12 @@ class TopPages extends Widget
     public ?string $siteId = null;
 
     public ?string $dateRange = 'today';
+
+    public ?bool $showElementTitle = null;
+
+    public ?array $sectionHandles = [];
+
+    public ?array $items = [];
 
     public int $limit = 5;
 
@@ -155,6 +164,14 @@ class TopPages extends Widget
                     $dbDependency = new DbDependency([
                         'sql' => $rawQuery,
                     ]);
+                    // a dependency for elements changes
+                    $query = (new Query())
+                        ->select(['max(dateUpdated)'])
+                        ->from('{{%elements}}');
+                    $rawQuery = $query->createCommand()->getRawSql();
+                    $dbDependency2 = new DbDependency([
+                        'sql' => $rawQuery,
+                    ]);
                 }
                 $expressionDependency = new ExpressionDependency([
                     'expression' => 'date("Y-m-d")',
@@ -163,9 +180,19 @@ class TopPages extends Widget
                 if (isset($dbDependency)) {
                     $dependencies[] = $dbDependency;
                 }
+                if (isset($dbDependency2)) {
+                    $dependencies[] = $dbDependency2;
+                }
                 $dependencies[] = $expressionDependency;
                 $dependencies[] = new TagDependency(['tags' => 'counter-plugin']);
-                $topPages = Counter::$plugin->pages->top($this->dateRange, $this->siteId, $this->limit);
+                $filters = [];
+                if ($this->sectionHandles) {
+                    $filters['sectionHandles'] = $this->sectionHandles;
+                }
+                if ($this->items) {
+                    $filters['items'] = $this->items;
+                }
+                $topPages = Counter::$plugin->pages->top($this->dateRange, $this->siteId, $this->limit, $this->showElementTitle, $filters);
 
                 // force cacheWidgetsSeconds to 0 for past date ranges.
                 if ($widget->dateRange == 'yesterday') {
@@ -198,10 +225,55 @@ class TopPages extends Widget
         $id = 'top-pages' . StringHelper::randomString();
         $namespaceId = Craft::$app->getView()->namespaceInputId($id);
 
+        $currentVersion = Craft::$app->version;
+        $targetVersion = '5.0.0';
+        $sectionItems = [];
+        if (version_compare($currentVersion, $targetVersion, '>=')) {
+            $sections = Craft::$app->entries->getAllSections();
+        } else {
+            $sections = Craft::$app->sections->getAllSections();
+        }
+        foreach ($sections as $section) {
+            $currentUser = Craft::$app->getUser()->getIdentity();
+            if ($currentUser->can("viewEntries:$section->uid")) {
+                $sectionItem = [];
+                $sectionItem['value'] = $section->handle;
+                $sectionItem['label'] = $section->name;
+                $sectionItems[] = $sectionItem;
+            }
+        }
+
+        $items = [];
+        // short name for core element types
+        $item['value'] = 'page';
+        $item['label'] = 'Page';
+        $items[] = $item;
+        $item['value'] = 'entry';
+        $item['label'] = 'Entry';
+        $items[] = $item;
+        $item['value'] = 'category';
+        $item['label'] = 'Category';
+        $items[] = $item;
+        $item['value'] = 'tag';
+        $item['label'] = 'Tag';
+        $items[] = $item;
+        $elementTypes = craft::$app->elements->getAllElementTypes();
+        foreach ($elementTypes as $elementType) {
+            if ($elementType::hasUris() && ($elementType != Entry::class) && ($elementType != Category::class) && ($elementType != Tag::class)) {
+                $item = [];
+                // prevent breaking selectize with encoding values
+                $item['value'] = urlencode($elementType);
+                $item['label'] = $elementType::displayName();
+                $items[] = $item;
+            }
+        }
+
         return Craft::$app->getView()->renderTemplate('counter/_components/widgets/top-pages/settings', [
             'id' => $id,
             'namespaceId' => $namespaceId,
             'widget' => $this,
+            'sections' => $sectionItems,
+            'items' => $items,
         ]);
     }
 
@@ -212,6 +284,7 @@ class TopPages extends Widget
     {
         $rules = parent::defineRules();
         $rules[] = [['dateRange'], 'safe'];
+        $rules[] = [['showElementTitle'], 'in', 'range' => ['0', '1']];
         $rules[] = [['limit'], 'integer', 'min' => 1, 'max' => 20];
         $rules[] = [['siteId'], SiteValidator::class, 'skipOnEmpty' => false];
 

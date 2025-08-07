@@ -9,6 +9,7 @@ namespace vnali\counter\controllers;
 use Craft;
 use craft\db\Query;
 use craft\helpers\DateTimeHelper;
+use craft\helpers\StringHelper as HelpersStringHelper;
 use craft\web\Controller;
 use vnali\counter\Counter;
 use vnali\counter\helpers\StringHelper;
@@ -266,6 +267,13 @@ class WidgetController extends Controller
                     $dbDependency = new DbDependency([
                         'sql' => $rawQuery,
                     ]);
+                    $query = (new Query())
+                        ->select(['max(dateUpdated)'])
+                        ->from('{{%elements}}');
+                    $rawQuery = $query->createCommand()->getRawSql();
+                    $dbDependency2 = new DbDependency([
+                        'sql' => $rawQuery,
+                    ]);
                 }
                 //
                 $expressionDependency = new ExpressionDependency([
@@ -276,15 +284,25 @@ class WidgetController extends Controller
                 if (isset($dbDependency)) {
                     $dependencies[] = $dbDependency;
                 }
+                if (isset($dbDependency2)) {
+                    $dependencies[] = $dbDependency2;
+                }
                 $dependencies[] = $expressionDependency;
                 $dependencies[] = new TagDependency(['tags' => 'counter-plugin']);
 
-                $topPages = Counter::$plugin->pages->top($widget->dateRange, $widget->siteId, $widget->limit);
+                $filters = [];
+                if ($widget->sectionHandles) {
+                    $filters['sectionHandles'] = $widget->sectionHandles;
+                }
+                if ($widget->items) {
+                    $filters['items'] = $widget->items;
+                }
+                $topPages = Counter::$plugin->pages->top($widget->dateRange, $widget->siteId, $widget->limit, $widget->showElementTitle, $filters);
                 $response = [];
                 foreach ($topPages as $topPage) {
                     $tableData = [];
-                    $tableData['title'] = $topPage['page'] . '...';
-                    $tableData['url'] = $topPage['page'];
+                    $tableData['title'] = HelpersStringHelper::safeTruncate($topPage['page'], 50, '...', true);
+                    $tableData['url'] = $topPage['url'];
                     $tableData['visits'] = $topPage['visits'];
                     $response[] = $tableData;
                 }
@@ -330,7 +348,7 @@ class WidgetController extends Controller
                 $response = [];
                 foreach ($decliningPages as $decliningPage) {
                     $tableData = [];
-                    $tableData['title'] = $decliningPage['page'] . '...';
+                    $tableData['title'] = HelpersStringHelper::safeTruncate($decliningPage['page'], 50, '...', true);
                     $tableData['url'] = $decliningPage['page'];
                     $tableData['current'] = $decliningPage['current'];
                     $tableData['previous'] = $decliningPage['previous'];
@@ -418,7 +436,7 @@ class WidgetController extends Controller
                 $response = [];
                 foreach ($trendingPages as $trendingPage) {
                     $tableData = [];
-                    $tableData['title'] = $trendingPage['page'] . '...';
+                    $tableData['title'] = HelpersStringHelper::safeTruncate($trendingPage['page'], 50, '...', true);
                     $tableData['url'] = $trendingPage['page'];
                     $tableData['current'] = $trendingPage['current'];
                     $tableData['previous'] = $trendingPage['previous'];
@@ -458,7 +476,8 @@ class WidgetController extends Controller
                 $page = $pageRecord->page;
                 if (!$cacheWidgetsSeconds) {
                     $dbDependency = new DbDependency([
-                        'sql' => 'SELECT dateUpdated FROM {{%counter_page_visits}} where page=:page', 'params' => [':page' => $page],
+                        'sql' => 'SELECT dateUpdated FROM {{%counter_page_visits}} where page=:page',
+                        'params' => [':page' => $page],
                     ]);
                 }
                 $expressionDependency = new ExpressionDependency([

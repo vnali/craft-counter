@@ -125,11 +125,13 @@ class CounterVariable
      * @param string|null $dateRange
      * @param string|null $siteId
      * @param int|null $limit
+     * @param bool|null $showElementTitle
+     * @param array|null $filters
      * @return array|null
      */
-    public function topPages(?string $dateRange, ?string $siteId = null, ?int $limit = null): ?array
+    public function topPages(?string $dateRange, ?string $siteId = null, ?int $limit = null, ?bool $showElementTitle = false, ?array $filters = []): ?array
     {
-        return Counter::$plugin->pages->top($dateRange, $siteId, $limit);
+        return Counter::$plugin->pages->top($dateRange, $siteId, $limit, $showElementTitle, $filters);
     }
 
     /**
