@@ -8,6 +8,7 @@
 - Added the possibility for top pages to return the element title instead of the page URL for pages that return an element.
 - Changed the top page statistics to filter pages related to the elements.
 - Fixed a bug where widgets are not loaded when the plugin settings are not configured.
+- Fixed a bug where page URLs are not truncated when widgets are set to load after the page load.
 - Minimally change the label of column in the page visits widget from value to Visits.
 
 ## 1.0.0-beta.2 - 2025-01-11
