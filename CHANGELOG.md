@@ -4,7 +4,6 @@
 
 - Added a utility to import statistics from the Views Work plugin. [(#1)](https://github.com/vnali/craft-counter-docs/issues/1)
 - Added counter statistics to the entry and category index pages.
-- Added counter statistics to the entry and category GQL queries.
 - Added the possibility for top pages to return the element title instead of the page URL for pages that return an element.
 - Changed the top page statistics to filter pages related to the elements.
 - Fixed a bug where widgets are not loaded when the plugin settings are not configured.

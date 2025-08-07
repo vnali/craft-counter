@@ -691,6 +691,7 @@ class Counter extends Plugin
             ];
         });
 
+        /*
         Event::on(
             TypeManager::class,
             TypeManager::EVENT_DEFINE_GQL_TYPE_FIELDS,
@@ -763,8 +764,10 @@ class Counter extends Plugin
                 }
             }
         );
+        */
     }
 
+    /*
     private function _counterGqlColumns($source, $attribute)
     {
         $elementId = $source->id;
@@ -783,4 +786,5 @@ class Counter extends Plugin
         }
         return $return;
     }
+    */
 }
