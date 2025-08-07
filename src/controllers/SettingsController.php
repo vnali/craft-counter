@@ -84,7 +84,6 @@ class SettingsController extends Controller
         $currentVersion = Craft::$app->version;
         $targetVersion = '5.0.0';
         if (version_compare($currentVersion, $targetVersion, '>=')) {
-            // @phpstan-ignore-next-line
             $editionName = Craft::$app->edition->name;
         } else {
             $editionName = Craft::$app->getEditionName();
