@@ -11,7 +11,7 @@ use craft\db\Query;
 use craft\helpers\Queue;
 use craft\web\Controller;
 use DateTime;
-use vnali\counter\queue\jobs\ViewsWork;
+use vnali\counter\queue\jobs\ViewsWorkImport;
 use vnali\counter\records\CounterRecord;
 use vnali\counter\records\PageVisitsRecord;
 use yii\web\ForbiddenHttpException;
@@ -123,9 +123,9 @@ class ImportController extends Controller
                         $counterRecord->save();
                     }
                 }
-                $records = \twentyfourhoursmedia\viewswork\records\ViewRecording::find()->all();
-                Queue::push(new ViewsWork([
-                    'records' => $records,
+                $recordsQuery = \twentyfourhoursmedia\viewswork\records\ViewRecording::find()->orderBy('id ASC');
+                Queue::push(new ViewsWorkImport([
+                    'recordsQuery' => $recordsQuery,
                 ]));
                 Craft::$app->getSession()->setNotice('The import job has been added to the queue.');
             } else {

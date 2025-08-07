@@ -5,7 +5,10 @@ namespace vnali\counter\utilities;
 use Craft;
 use craft\base\Utility;
 
-class ImportDataUtility extends Utility
+/**
+ * Import data utility. we use different class because iconPath is replaced with icon in craft 5
+ */
+class ImportDataUtility4 extends Utility
 {
     /**
      * @inheritdoc
@@ -26,7 +29,7 @@ class ImportDataUtility extends Utility
     /**
      * @inheritdoc
      */
-    public static function icon(): ?string
+    public static function iconPath(): ?string
     {
         return Craft::getAlias('@vnali/counter/icon-mask.svg');
     }
