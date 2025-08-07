@@ -4,6 +4,7 @@
 
 - Added a utility to import statistics from the Views Work plugin. [(#1)](https://github.com/vnali/craft-counter-docs/issues/1)
 - Fixed a bug where widgets are not loaded when the plugin settings are not configured.
+- Change the label of column in the page visits widget from value to Visits.
 
 ## 1.0.0-beta.2 - 2025-01-11
 
