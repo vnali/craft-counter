@@ -32,9 +32,11 @@ class ViewsWorkImport extends BaseBatchedJob
         $element = Craft::$app->elements->getElementById($elementId, null, $siteId);
         if (!$element) {
             Craft::info("element $elementId is not found for siteId $siteId");
+            return;
         }
         if (!$element->getUrl()) {
             Craft::info("element $elementId has not a url for $siteId");
+            return;
         }
         $url = $element->getUrl();
         /** @var PageVisitsRecord|null $pageVisitRecord */
