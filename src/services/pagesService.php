@@ -862,14 +862,23 @@ class pagesService extends Component
                 if (version_compare($currentVersion, $targetVersion, '>=')) {
                     $query = (new \yii\db\Query())
                         ->select('es.title')
-                        ->from(['es' => 'elements_sites'])
-                        ->innerJoin(['e' => 'elements'], 'e.id = es.elementId');
+                        ->from(['es' => 'elements_sites']);
+                    if (Craft::$app->getDb()->getIsPgsql()) {
+                        $query->innerJoin(['e' => 'elements'], 'e.id = es."elementId"');
+                    } else {
+                        $query->innerJoin(['e' => 'elements'], 'e.id = es.elementId');
+                    }
                 } else {
                     $query = (new \yii\db\Query())
                         ->select('c.title')
-                        ->from(['es' => 'elements_sites'])
-                        ->innerJoin(['e' => 'elements'], 'e.id = es.elementId')
-                        ->innerJoin(['c' => 'content'], 'c.elementId = e.id AND c.siteId = es.siteId');
+                        ->from(['es' => 'elements_sites']);
+                    if (Craft::$app->getDb()->getIsPgsql()) {
+                        $query->innerJoin(['e' => 'elements'], 'e.id = es."elementId"')
+                            ->innerJoin(['c' => 'content'], 'c."elementId" = e.id AND c."siteId" = es."siteId"');
+                    } else {
+                        $query->innerJoin(['e' => 'elements'], 'e.id = es.elementId')
+                            ->innerJoin(['c' => 'content'], 'c.elementId = e.id AND c.siteId = es.siteId');
+                    }
                 }
 
                 $query->where([
@@ -913,14 +922,23 @@ class pagesService extends Component
                 if (version_compare($currentVersion, $targetVersion, '>=')) {
                     $query = (new \yii\db\Query())
                         ->select('es.title, e.type, e.id')
-                        ->from(['es' => 'elements_sites'])
-                        ->innerJoin(['e' => 'elements'], 'e.id = es.elementId');
+                        ->from(['es' => 'elements_sites']);
+                    if (Craft::$app->getDb()->getIsPgsql()) {
+                        $query->innerJoin(['e' => 'elements'], 'e.id = es."elementId"');
+                    } else {
+                        $query->innerJoin(['e' => 'elements'], 'e.id = es.elementId');
+                    }
                 } else {
                     $query = (new \yii\db\Query())
                         ->select('c.title, e.type, e.id')
-                        ->from(['es' => 'elements_sites'])
-                        ->innerJoin(['e' => 'elements'], 'e.id = es.elementId')
-                        ->innerJoin(['c' => 'content'], 'c.elementId = e.id AND c.siteId = es.siteId');
+                        ->from(['es' => 'elements_sites']);
+                    if (Craft::$app->getDb()->getIsPgsql()) {
+                        $query->innerJoin(['e' => 'elements'], 'e.id = es."elementId"')
+                            ->innerJoin(['c' => 'content'], 'c."elementId" = e.id AND c."siteId" = es."siteId"');
+                    } else {
+                        $query->innerJoin(['e' => 'elements'], 'e.id = es.elementId')
+                            ->innerJoin(['c' => 'content'], 'c.elementId = e.id AND c.siteId = es.siteId');
+                    }
                 }
                 $query->where([
                     'es.siteId' => $siteId,
@@ -931,9 +949,13 @@ class pagesService extends Component
                 ])->limit(1);
                 $elementRecord = $query->one();
                 if ($elementRecord) {
-                    $query = (new Query())
-                        ->select(['max(dateUpdated)'])
-                        ->from('{{%elements}}')
+                    $query = (new Query());
+                    if (Craft::$app->getDb()->getIsPgsql()) {
+                        $query->select(['max("dateUpdated")']);
+                    } else {
+                        $query->select(['max(dateUpdated)']);
+                    }
+                    $query->from('{{%elements}}')
                         ->where(['id' => $elementRecord['id']]);
                     $rawQuery = $query->createCommand()->getRawSql();
                     $dbDependency = new DbDependency([

@@ -267,9 +267,13 @@ class WidgetController extends Controller
                     $dbDependency = new DbDependency([
                         'sql' => $rawQuery,
                     ]);
-                    $query = (new Query())
-                        ->select(['max(dateUpdated)'])
-                        ->from('{{%elements}}');
+                    $query = (new Query());
+                    if (Craft::$app->getDb()->getIsPgsql()) {
+                        $query->select(['max("dateUpdated")']);
+                    } else {
+                        $query->select(['max(dateUpdated)']);
+                    }
+                    $query->from('{{%elements}}');
                     $rawQuery = $query->createCommand()->getRawSql();
                     $dbDependency2 = new DbDependency([
                         'sql' => $rawQuery,

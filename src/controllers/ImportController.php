@@ -54,9 +54,13 @@ class ImportController extends Controller
             if (!$pageVisitRecord) {
                 $importSiteVisits = $this->request->getBodyParam('importSiteVisits');
                 if ($importSiteVisits) {
-                    $visits = (new Query())
-                        ->select(['siteId', 'SUM(viewsTotal) AS viewsTotal'])
-                        ->from('{{%viewswork_viewrecording}}')   // replace with your table
+                    $visits = (new Query());
+                    if (Craft::$app->getDb()->getIsPgsql()) {
+                        $visits->select(['siteId', 'SUM("viewsTotal") AS "viewsTotal"']);
+                    } else {
+                        $visits->select(['siteId', 'SUM(viewsTotal) AS viewsTotal']);
+                    }
+                    $visits->from('{{%viewswork_viewrecording}}')   // replace with your table
                         ->groupBy('siteId')
                         ->all();
                     $now = new DateTime('now', new \DateTimeZone("UTC"));
