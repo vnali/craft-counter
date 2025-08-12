@@ -51,6 +51,8 @@ class Settings extends Model
 
     public ?string $siteSettings = null;
 
+    public ?bool $keepElementStatsOnUrlChange = true;
+
     public function rules(): array
     {
         $rules = parent::rules();

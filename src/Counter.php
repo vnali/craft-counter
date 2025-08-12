@@ -5,9 +5,11 @@ namespace vnali\counter;
 use Craft;
 use craft\base\Element;
 use craft\base\Plugin;
+use craft\db\Query;
 use craft\elements\Category;
 use craft\elements\Entry;
 use craft\events\DefineGqlTypeFieldsEvent;
+use craft\events\ModelEvent;
 use craft\events\RegisterCacheOptionsEvent;
 use craft\events\RegisterComponentTypesEvent;
 use craft\events\RegisterElementTableAttributesEvent;
@@ -19,6 +21,7 @@ use craft\events\RegisterUrlRulesEvent;
 use craft\events\RegisterUserPermissionsEvent;
 use craft\events\WidgetEvent;
 use craft\gql\TypeManager;
+use craft\helpers\ElementHelper;
 use craft\helpers\UrlHelper;
 use craft\services\Dashboard;
 use craft\services\Gql;
@@ -38,7 +41,9 @@ use vnali\counter\gql\types\CounterType;
 use vnali\counter\gql\types\PageVisitsType;
 use vnali\counter\gql\types\TopPagesType;
 use vnali\counter\gql\types\TrendingPagesType;
+use vnali\counter\helpers\UrlHelper as HelpersUrlHelper;
 use vnali\counter\models\Settings;
+use vnali\counter\records\PageVisitsRecord;
 use vnali\counter\services\counterService;
 use vnali\counter\services\pagesService;
 use vnali\counter\twig\CounterVariable;
@@ -57,6 +62,7 @@ use vnali\counter\widgets\Visitors;
 use vnali\counter\widgets\Visits;
 use vnali\counter\widgets\VisitsRecent;
 use yii\base\Event;
+use yii\caching\TagDependency;
 
 /**
  * Counter plugin
@@ -151,6 +157,92 @@ class Counter extends Plugin
                     );
                 }
             }
+        }
+
+        $keepElementStatsOnUrlChange = $settings->keepElementStatsOnUrlChange;
+        if ($keepElementStatsOnUrlChange) {
+            // because we can't catch element's old uri in after save
+            Event::on(
+                Element::class,
+                Element::EVENT_BEFORE_SAVE,
+                function(ModelEvent $event) {
+                    $element = $event->sender;
+                    if (!ElementHelper::isDraftOrRevision($element)) {
+                        if (!$event->isNew && $element->hasUris()) {
+                            $oldUri = (new Query())
+                                ->select(['uri'])
+                                ->from(['elements_sites'])
+                                ->where([
+                                    'elementId' => $element->id,
+                                    'siteId' => $element->siteId,
+                                ])
+                                ->scalar();
+                            $cache = Craft::$app->getCache();
+                            $cache->set('counter-element-old-uri-' . $element->id . '-' . $element->siteId, $oldUri, 60, new TagDependency(['tags' => 'counter-plugin']));
+                        }
+                    }
+                }
+            );
+
+            // we use after save because we can't catch element uri in before save if element save quickly before creating draft
+            Event::on(
+                Element::class,
+                Element::EVENT_AFTER_SAVE,
+                function(ModelEvent $event) {
+                    $element = $event->sender;
+                    if (!ElementHelper::isDraftOrRevision($element)) {
+                        if (!$event->isNew && $element->hasUris()) {
+                            // Query the old URI from elements_sites table
+                            $cache = Craft::$app->getCache();
+                            $oldUri = $cache->get('counter-element-old-uri-' . $element->id . '-' . $element->siteId);
+                            if ($oldUri === false) {
+                                $oldUri = (new Query())
+                                    ->select(['uri'])
+                                    ->from(['elements_sites'])
+                                    ->where([
+                                        'elementId' => $element->id,
+                                        'siteId' => $element->siteId,
+                                    ])
+                                    ->scalar();
+                            }
+                            $newUri = $element->uri;
+                            if ($oldUri !== null && $newUri !== null && $oldUri !== $newUri) {
+                                $site = $element->getSite();
+                                $oldUrl = rtrim($site->getBaseUrl(), '/') . '/' . ltrim($oldUri, '/');
+                                $oldUrl = HelpersUrlHelper::trimURL($oldUrl, 2048, 3072);
+                                $newUrl = $element->getUrl();
+                                $newUrl = HelpersUrlHelper::trimURL($newUrl, 2048, 3072);
+                                /** @var PageVisitsRecord|null $oldPageVisitsRecord */
+                                $oldPageVisitsRecord = PageVisitsRecord::find()->where(['page' => $oldUrl, 'siteId' => $element->siteId])->one();
+                                /** @var PageVisitsRecord|null $newPageVisitsRecord */
+                                $newPageVisitsRecord = PageVisitsRecord::find()->where(['page' => $newUrl, 'siteId' => $element->siteId])->one();
+                                if ($oldPageVisitsRecord) {
+                                    if ($newPageVisitsRecord) {
+                                        $newPageVisitsRecord->allTime = $newPageVisitsRecord->allTime + $oldPageVisitsRecord->allTime;
+                                        $newPageVisitsRecord->allTimeIgnoreInterval = $newPageVisitsRecord->allTimeIgnoreInterval + $oldPageVisitsRecord->allTimeIgnoreInterval;
+                                        $newPageVisitsRecord->today = $newPageVisitsRecord->today + $oldPageVisitsRecord->today;
+                                        $newPageVisitsRecord->thisWeek = $newPageVisitsRecord->thisWeek + $oldPageVisitsRecord->thisWeek;
+                                        $newPageVisitsRecord->thisMonth = $newPageVisitsRecord->thisMonth + $oldPageVisitsRecord->thisMonth;
+                                        $newPageVisitsRecord->thisYear = $newPageVisitsRecord->thisYear + $oldPageVisitsRecord->thisYear;
+                                        $newPageVisitsRecord->yesterday = $newPageVisitsRecord->yesterday + $oldPageVisitsRecord->yesterday;
+                                        $newPageVisitsRecord->previousWeek = $newPageVisitsRecord->previousWeek + $oldPageVisitsRecord->previousWeek;
+                                        $newPageVisitsRecord->previousMonth = $newPageVisitsRecord->previousMonth + $oldPageVisitsRecord->previousMonth;
+                                        $newPageVisitsRecord->previousYear = $newPageVisitsRecord->previousYear + $oldPageVisitsRecord->previousYear;
+                                        if ($newPageVisitsRecord->save()) {
+                                            $oldPageVisitsRecord->delete();
+                                        }
+                                    } else {
+                                        $oldPageVisitsRecord->page = $newUrl;
+                                        // dont update dateUpdated. update this need check for yesterday and ...
+                                        $oldPageVisitsRecord->markAttributeDirty('dateUpdated');
+                                        $oldPageVisitsRecord->save();
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            );
         }
 
         foreach ([Entry::class, Category::class] as $elementClass) {
