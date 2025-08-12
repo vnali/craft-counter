@@ -51,7 +51,7 @@ class Settings extends Model
 
     public ?string $siteSettings = null;
 
-    public ?bool $keepElementStatsOnUrlChange = true;
+    public ?bool $keepElementStatsOnUrlChange = false;
 
     public function rules(): array
     {
