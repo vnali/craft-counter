@@ -24,10 +24,30 @@ class TopPagesType extends ObjectType
             'type' => Type::STRING(),
             'description' => 'Page',
         ];
+        $fields['url'] = [
+            'name' => 'url',
+            'type' => Type::STRING(),
+            'description' => 'URL',
+        ];
         $fields['visits'] = [
             'name' => 'visits',
             'type' => Type::INT(),
             'description' => 'Visits',
+        ];
+        $fields['elementId'] = [
+            'name' => 'elementId',
+            'type' => Type::INT(),
+            'description' => 'Element Id',
+        ];
+        $fields['elementType'] = [
+            'name' => 'elementType',
+            'type' => Type::STRING(),
+            'description' => 'Element Type',
+        ];
+        $fields['siteId'] = [
+            'name' => 'siteId',
+            'type' => Type::INT(),
+            'description' => 'Site Id',
         ];
         $fields['debugMessage'] = [
             'name' => 'debugMessage',

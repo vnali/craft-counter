@@ -307,6 +307,8 @@ class pagesService extends Component
      */
     public function top(?string $dateRange, ?string $siteId = null, ?int $limit = null, ?bool $showElementTitle = false, ?array $filters = []): ?array
     {
+        // start time
+        $start = microtime(true);
         if (!$limit) {
             $limit = 20;
         }
@@ -433,9 +435,13 @@ class pagesService extends Component
                 if ($this->_showPage($pageVisitRecord, $filters)) {
                     $count++;
                     $visit = [];
-                    $visit['page'] = !$showElementTitle ? $pageVisitRecord->page : $this->_pageTitle($pageVisitRecord);
+                    list($title, $siteId, $elementId, $elementType) = $this->_pageAttributes($pageVisitRecord);
+                    $visit['page'] = !$showElementTitle ? $pageVisitRecord->page : $title;
                     $visit['url'] = $pageVisitRecord->page;
                     $visit['visits'] = $pageVisitRecord->{$dateRange};
+                    $visit['siteId'] = $siteId;
+                    $visit['elementId'] = $elementId;
+                    $visit['elementType'] = $elementType;
                     $visit['debugMessage'] = 'ok';
                     $visits[] = $visit;
                 }
@@ -476,7 +482,11 @@ class pagesService extends Component
                     if ($this->_showPage($pageVisitRecord, $filters)) {
                         $count++;
                         $visit = [];
-                        $visit['page'] = !$showElementTitle ? $pageVisitRecord->page : $this->_pageTitle($pageVisitRecord);
+                        list($title, $siteId, $elementId, $elementType) = $this->_pageAttributes($pageVisitRecord);
+                        $visit['page'] = !$showElementTitle ? $pageVisitRecord->page : $title;
+                        $visit['siteId'] = $siteId;
+                        $visit['elementId'] = $elementId;
+                        $visit['elementType'] = $elementType;
                         $visit['url'] = $pageVisitRecord->page;
                         $visit['visits'] = $pageVisitRecord->today;
                         $visit['debugMessage'] = 'ok';
@@ -495,7 +505,11 @@ class pagesService extends Component
 
             $visits = array_slice($visits, 0, $limit);
         }
-
+        // end time
+        $end = microtime(true);
+        // calculate duration
+        $duration = $end - $start;
+        craft::info('execution time for top pages: ' . number_format($duration, 3) . " seconds $dateRange $siteId $limit " . json_encode($filters));
         return $visits;
     }
 
@@ -840,18 +854,18 @@ class pagesService extends Component
     }
 
     /**
-     * Returns element title if page is related to an element
+     * Returns element title, siteId, elementId and element type if page is related to an element
      *
      * @param PageVisitsRecord $pageRecord
-     * @return string
+     * @return array
      */
-    private static function _pageTitle(PageVisitsRecord $pageRecord): string
+    private static function _pageAttributes(PageVisitsRecord $pageRecord): array
     {
         $title = $pageRecord->page;
         $cache = Craft::$app->getCache();
         $elementRecord = $cache->get('counter-page-record-element-' . $pageRecord->id);
+        $siteId = $pageRecord->siteId;
         if ($elementRecord === false) {
-            $siteId = $pageRecord->siteId;
             $site = Craft::$app->sites->getSiteById($siteId);
             if ($site) {
                 $siteUrl = $site->getBaseUrl();
@@ -860,23 +874,27 @@ class pagesService extends Component
                 $currentVersion = Craft::$app->version;
                 $targetVersion = '5.0.0';
                 if (version_compare($currentVersion, $targetVersion, '>=')) {
-                    $query = (new \yii\db\Query())
-                        ->select('es.title')
-                        ->from(['es' => 'elements_sites']);
+                    $query = (new \yii\db\Query());
                     if (Craft::$app->getDb()->getIsPgsql()) {
-                        $query->innerJoin(['e' => 'elements'], 'e.id = es."elementId"');
+                        $query->select('es."elementId", es.title, e.type')
+                            ->from(['es' => 'elements_sites'])
+                            ->innerJoin(['e' => 'elements'], 'e.id = es."elementId"');
                     } else {
-                        $query->innerJoin(['e' => 'elements'], 'e.id = es.elementId');
+                        $query->select('es.elementId, es.title, e.type')
+                            ->from(['es' => 'elements_sites'])
+                            ->innerJoin(['e' => 'elements'], 'e.id = es.elementId');
                     }
                 } else {
-                    $query = (new \yii\db\Query())
-                        ->select('c.title')
-                        ->from(['es' => 'elements_sites']);
+                    $query = (new \yii\db\Query());
                     if (Craft::$app->getDb()->getIsPgsql()) {
-                        $query->innerJoin(['e' => 'elements'], 'e.id = es."elementId"')
+                        $query->select('es."elementId", c.title, e.type')
+                            ->from(['es' => 'elements_sites'])
+                            ->innerJoin(['e' => 'elements'], 'e.id = es."elementId"')
                             ->innerJoin(['c' => 'content'], 'c."elementId" = e.id AND c."siteId" = es."siteId"');
                     } else {
-                        $query->innerJoin(['e' => 'elements'], 'e.id = es.elementId')
+                        $query->select('es.elementId, c.title, e.type')
+                            ->from(['es' => 'elements_sites'])
+                            ->innerJoin(['e' => 'elements'], 'e.id = es.elementId')
                             ->innerJoin(['c' => 'content'], 'c.elementId = e.id AND c.siteId = es.siteId');
                     }
                 }
@@ -892,8 +910,10 @@ class pagesService extends Component
                 $elementRecord = $query->one();
             }
         }
+        $elementId = ($elementRecord && $elementRecord['elementId']) ? $elementRecord['elementId'] : null;
+        $elementType = ($elementRecord && $elementRecord['type']) ? $elementRecord['type'] : null;
         $title = ($elementRecord && $elementRecord['title']) ? $elementRecord['title'] : $title;
-        return $title;
+        return array($title, $siteId, $elementId, $elementType);
     }
 
     /**
@@ -921,7 +941,7 @@ class pagesService extends Component
                 $targetVersion = '5.0.0';
                 if (version_compare($currentVersion, $targetVersion, '>=')) {
                     $query = (new \yii\db\Query())
-                        ->select('es.title, e.type, e.id')
+                        ->select('es.title, e.type, es.elementId')
                         ->from(['es' => 'elements_sites']);
                     if (Craft::$app->getDb()->getIsPgsql()) {
                         $query->innerJoin(['e' => 'elements'], 'e.id = es."elementId"');
@@ -930,7 +950,7 @@ class pagesService extends Component
                     }
                 } else {
                     $query = (new \yii\db\Query())
-                        ->select('c.title, e.type, e.id')
+                        ->select('c.title, e.type, es.elementId')
                         ->from(['es' => 'elements_sites']);
                     if (Craft::$app->getDb()->getIsPgsql()) {
                         $query->innerJoin(['e' => 'elements'], 'e.id = es."elementId"')
