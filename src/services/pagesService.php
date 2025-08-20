@@ -971,12 +971,14 @@ class pagesService extends Component
                 if ($elementRecord) {
                     $query = (new Query());
                     if (Craft::$app->getDb()->getIsPgsql()) {
-                        $query->select(['max("dateUpdated")']);
+                        $query->select(['max("dateUpdated")'])
+                            ->from('{{%elements}}')
+                            ->where(['id' => $elementRecord['"elementId"']]);
                     } else {
-                        $query->select(['max(dateUpdated)']);
+                        $query->select(['max(dateUpdated)'])
+                            ->from('{{%elements}}')
+                            ->where(['id' => $elementRecord['elementId']]);
                     }
-                    $query->from('{{%elements}}')
-                        ->where(['id' => $elementRecord['id']]);
                     $rawQuery = $query->createCommand()->getRawSql();
                     $dbDependency = new DbDependency([
                         'sql' => $rawQuery,
@@ -1017,7 +1019,11 @@ class pagesService extends Component
                 }
                 if (isset($filters['sectionHandles']) && $filters['sectionHandles']) {
                     if ($elementRecord['type'] == Entry::class) {
-                        $entry = Entry::find()->id($elementRecord['id'])->one();
+                        if (Craft::$app->getDb()->getIsPgsql()) {
+                            $entry = Entry::find()->id($elementRecord['"elementId"'])->one();
+                        } else {
+                            $entry = Entry::find()->id($elementRecord['elementId'])->one();
+                        }
                         if ($entry) {
                             $sectionHandle = $entry->getSection()->handle;
                             if (!$sectionHandle || !in_array($sectionHandle, $filters['sectionHandles'])) {
