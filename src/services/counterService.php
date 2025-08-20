@@ -828,6 +828,10 @@ class counterService extends Component
                     $pageVisitRecord->save();
                 }
                 $mutex->release($mutexKey);
+                // If a user uses statistics for entries and categories GQL queries and sets this setting to true, invalidate the cache.
+                if ($pluginSettings->dontCacheGql) {
+                    Craft::$app->getGql()->invalidateCaches();
+                }
             } else {
                 craft::info('can not acquire lock to log visits in page visits: ' . $visitorRecord->id);
             }

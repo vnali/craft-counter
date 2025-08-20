@@ -51,6 +51,8 @@ class Settings extends Model
 
     public ?string $siteSettings = null;
 
+    public ?bool $dontCacheGql = false;
+
     public function rules(): array
     {
         $rules = parent::rules();
