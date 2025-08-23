@@ -40,7 +40,7 @@ class CounterAsset extends AssetBundle
         // Register only if site or page visitor is enabled
         if ($enabledCounter) {
             // If we should support outdated browsers, we include Jquery.
-            if ($pluginSettings->supportOutdatedBrowsers) {
+            if ($pluginSettings->supportOutdatedBrowsers && $pluginSettings->autoImportJquery) {
                 $this->depends = [
                     JqueryAsset::class,
                 ];
