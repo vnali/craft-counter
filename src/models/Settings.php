@@ -53,6 +53,8 @@ class Settings extends Model
 
     public ?bool $autoImportJquery = true;
 
+    public ?array $decoupledSites = [];
+
     public function rules(): array
     {
         $rules = parent::rules();
