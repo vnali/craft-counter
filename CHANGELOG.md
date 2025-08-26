@@ -6,6 +6,7 @@
 - Added counter statistics to the entry and category index pages.
 - Added the possibility for top pages to return the element title instead of the page URL for pages that return an element.
 - Added `autoImportJquery` to the plugin config to prevent loading jQuery multiple times.
+- Added counter statistics to the entry and category GQL queries.
 - Changed the top page statistics to filter pages related to the elements.
 - Fixed a bug where widgets are not loaded when the plugin settings are not configured.
 - Fixed a bug where page URLs are not truncated when widgets are set to load after the page load.
