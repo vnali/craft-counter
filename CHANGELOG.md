@@ -6,7 +6,7 @@
 - Added counter statistics to the entry and category index pages. [(docs)](https://plugins.vnali.dev/counter/statistics/page-visits#page-visits-in-the-control-panel)
 - Added `autoImportJquery` to the plugin config to prevent loading jQuery multiple times. [(docs)](https://plugins.vnali.dev/counter/settings#config-file)
 - Added counter statistics to the entry and category GQL queries. [(docs)](https://plugins.vnali.dev/counter/statistics/page-visits#getting-page-visits-of-entries-and-categories)
-- Changed the top page widget to filter pages related to elements and return the element's title. [(docs)](https://plugins.vnali.dev.site/counter/widgets#top-pages)
+- Changed the top page widget to filter pages related to elements and return the element's title. [(docs)](https://plugins.vnali.dev/counter/widgets#top-pages)
 - Changed the top page statistics to filter pages related to elements and return element's title. [(docs)](https://plugins.vnali.dev/counter/statistics/top-pages)
 - Top page statistics now also return the url, elementId, elementType, and siteId. [(docs)](https://plugins.vnali.dev/counter/statistics/top-pages)
 - Fixed a bug where widgets are not loaded when the plugin settings are not configured.
