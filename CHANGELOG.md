@@ -1,10 +1,12 @@
 # Release Notes for Counter plugin for Craft 5
 
-## Unreleased
+## 1.1.0-beta.1 - 2025-08-28
+
+> {warning} If "Compatibility with outdated browsers" is enabled in your plugin settings and JQuery is already loaded on the frontend, you should set the autoImportJquery setting to false to prevent the plugin from loading jQuery again.
 
 - Added a utility to import statistics from the Views Work plugin. [(#1)](https://github.com/vnali/craft-counter-docs/issues/1) - [(docs)](https://plugins.vnali.dev/counter/import-from-views-work)
 - Added counter statistics to the entry and category index pages. [(docs)](https://plugins.vnali.dev/counter/statistics/page-visits#page-visits-in-the-control-panel)
-- Added `autoImportJquery` to the plugin config to prevent loading jQuery multiple times. [(docs)](https://plugins.vnali.dev/counter/settings#config-file)
+- Added `autoImportJquery` to the plugin config to prevent loading jQuery twice. [(docs)](https://plugins.vnali.dev/counter/settings#config-file)
 - Added counter statistics to the entry and category GQL queries. [(docs)](https://plugins.vnali.dev/counter/statistics/page-visits#getting-page-visits-of-entries-and-categories)
 - Changed the top page widget to filter pages related to elements and return the element's title. [(docs)](https://plugins.vnali.dev/counter/widgets#top-pages)
 - Changed the top page statistics to filter pages related to elements and return element's title. [(docs)](https://plugins.vnali.dev/counter/statistics/top-pages)
