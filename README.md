@@ -4,6 +4,7 @@
 
 - Count site visits, unique visitors, and online users.
 - Count page visits.
+- Display top and trending pages on the site frontend.
 - Support GraphQL and Twig for fetching site and page statistics.
 - Provide statistics widgets.
 
