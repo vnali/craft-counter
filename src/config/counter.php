@@ -25,7 +25,6 @@ return [
         'decoupledSites' => [
             'sites' => [],
             'handles' => [],
-            'enabledCounter' => [], // could be empty array or equal to other indexes. default is true
         ],
     ],
 ];

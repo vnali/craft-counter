@@ -231,30 +231,25 @@ class counterService extends Component
         $decoupledSites = $pluginSettings->decoupledSites;
         $siteId = null;
         $siteIndex = null;
-        $countDecoupledEnabledCounter = null;
+        $currentSite = null;
         // item should be an array
-        if (is_array($decoupledSites) && isset($decoupledSites['sites']) && isset($decoupledSites['handles']) && (!isset($decoupledSites['enabledCounter']) || is_array($decoupledSites['enabledCounter']))) {
+        if (is_array($decoupledSites) && isset($decoupledSites['sites']) && isset($decoupledSites['handles'])) {
             $countDecoupledSites = 0;
             $countDecoupledHandles = 0;
-            $countDecoupledEnabledCounter = 0;
             if (is_array($decoupledSites['sites'])) {
                 $countDecoupledSites = count($decoupledSites['sites']);
             }
             if (is_array($decoupledSites['handles'])) {
                 $countDecoupledHandles = count($decoupledSites['handles']);
             }
-            if (isset($decoupledSites['enabledCounter']) && is_array($decoupledSites['enabledCounter'])) {
-                $countDecoupledEnabledCounter = count($decoupledSites['enabledCounter']);
-            }
             // array should have equal items for each index. enabledCounter index can have no item or should have equal items
             // if there is a problem with config we use current site setting
-            if ($countDecoupledHandles != 0 && $countDecoupledSites == $countDecoupledHandles && ($countDecoupledEnabledCounter == 0 || $countDecoupledSites == $countDecoupledEnabledCounter)) {
+            if ($countDecoupledHandles != 0 && $countDecoupledSites == $countDecoupledHandles) {
                 foreach ($decoupledSites['sites'] as $siteIndex => $decoupledSite) {
                     if (strpos($pageUrl, $decoupledSite) === 0) {
                         $decoupledSiteHandle = $decoupledSites['handles'][$siteIndex];
-                        $siteByHandle = $sitesService->getSiteByHandle($decoupledSiteHandle);
-                        if ($siteByHandle) {
-                            $siteId = $siteByHandle->id;
+                        $currentSite = $sitesService->getSiteByHandle($decoupledSiteHandle);
+                        if ($currentSite) {
                             $decoupleDetected = true;
                             break;
                         }
@@ -263,10 +258,11 @@ class counterService extends Component
             }
         }
 
-        $currentSite = $sitesService->getCurrentSite();
         if (!$decoupleDetected) {
-            $siteId = $currentSite->id;
+            $currentSite = $sitesService->getCurrentSite();
         }
+
+        $siteId = $currentSite->id;
 
         $salt = $pluginSettings->salt;
         $anonymizedIp = IpHelper::anonymizeIp($userIp);
@@ -305,24 +301,13 @@ class counterService extends Component
         $enabledCounter = false;
         $calendarSystem = null;
 
-        if (!$decoupleDetected) {
-            $siteUnique = $currentSite->uid;
-            if (isset($siteSettings[$siteUnique]['calendar'])) {
-                $calendarSystem = $siteSettings[$siteUnique]['calendar'];
-            }
+        $siteUnique = $currentSite->uid;
+        if (isset($siteSettings[$siteUnique]['calendar'])) {
+            $calendarSystem = $siteSettings[$siteUnique]['calendar'];
+        }
 
-            if (isset($siteSettings[$siteUnique]['enabledCounter'])) {
-                $enabledCounter = $siteSettings[$siteUnique]['enabledCounter'];
-            }
-        } else {
-            // TODO: currently we only support gregorian, so set is as default to gregorian for decoupled
-            $calendarSystem = 'gregorian';
-            // if is is not set, or is [] set to true, otherwise see what is the value
-            if (!isset($decoupledSites['enabledCounter']) || !is_array($decoupledSites['enabledCounter']) || $countDecoupledEnabledCounter == 0) {
-                $enabledCounter = true;
-            } elseif (isset($decoupledSites['enabledCounter'][$siteIndex])) {
-                $enabledCounter = $decoupledSites['enabledCounter'][$siteIndex];
-            }
+        if (isset($siteSettings[$siteUnique]['enabledCounter'])) {
+            $enabledCounter = $siteSettings[$siteUnique]['enabledCounter'];
         }
 
         if (!$enabledCounter) {
