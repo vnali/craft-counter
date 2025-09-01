@@ -1,11 +1,16 @@
 # Release Notes for Counter plugin for Craft 5
 
-## Unreleased
+## 1.1.0-beta.1 - 2025-08-28
 
-- Added a utility to import statistics from the Views Work plugin. [(#1)](https://github.com/vnali/craft-counter-docs/issues/1)
-- Added counter statistics to the entry and category index pages.
-- Added the possibility for top pages to return the element title instead of the page URL for pages that return an element.
-- Changed the top page statistics to filter pages related to the elements.
+> {warning} If "Compatibility with outdated browsers" is enabled in your plugin settings and JQuery is already loaded on the frontend, you should set the autoImportJquery setting to false to prevent the plugin from loading jQuery again.
+
+- Added a utility to import statistics from the Views Work plugin. [(#1)](https://github.com/vnali/craft-counter-docs/issues/1) - [(docs)](https://plugins.vnali.dev/counter/import-from-views-work)
+- Added counter statistics to the entry and category index pages. [(docs)](https://plugins.vnali.dev/counter/statistics/page-visits#page-visits-in-the-control-panel)
+- Added `autoImportJquery` to the plugin config to prevent loading jQuery twice. [(docs)](https://plugins.vnali.dev/counter/settings#config-file)
+- Added counter statistics to the entry and category GQL queries. [(docs)](https://plugins.vnali.dev/counter/statistics/page-visits#getting-page-visits-of-entries-and-categories)
+- Changed the top page widget to filter pages related to elements and return the element's title. [(docs)](https://plugins.vnali.dev/counter/widgets#top-pages)
+- Changed the top page statistics to filter pages related to elements and return element's title. [(docs)](https://plugins.vnali.dev/counter/statistics/top-pages)
+- Top page statistics now also return the url, elementId, elementType, and siteId. [(docs)](https://plugins.vnali.dev/counter/statistics/top-pages)
 - Fixed a bug where widgets are not loaded when the plugin settings are not configured.
 - Fixed a bug where page URLs are not truncated when widgets are set to load after the page load.
 - Minimally change the label of column in the page visits widget from value to Visits.

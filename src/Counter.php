@@ -33,6 +33,7 @@ use craft\web\UrlManager;
 use GraphQL\Type\Definition\Type;
 use vnali\counter\assets\CounterAsset;
 use vnali\counter\gql\directives\DateConvert;
+use vnali\counter\gql\helpers\Gql as HelpersGql;
 use vnali\counter\gql\queries\CounterQuery;
 use vnali\counter\gql\queries\PageVisitsQuery;
 use vnali\counter\gql\queries\TopPagesQuery;
@@ -783,83 +784,98 @@ class Counter extends Plugin
             ];
         });
 
-        /*
         Event::on(
             TypeManager::class,
             TypeManager::EVENT_DEFINE_GQL_TYPE_FIELDS,
             function(DefineGqlTypeFieldsEvent $event) {
                 // Add counter attributes to all entries and categories
                 if ($event->typeName == 'EntryInterface' || $event->typeName == 'CategoryInterface') {
-                    $event->fields['todayViews'] = [
-                        'name' => 'todayViews',
-                        'type' => Type::int(),
-                        'resolve' => function($source, $arguments, $context, $resolveInfo) {
-                            return $this->_counterGqlColumns($source, $resolveInfo->fieldName);
-                        },
-                    ];
-                    $event->fields['thisWeekViews'] = [
-                        'name' => 'thisWeekViews',
-                        'type' => Type::int(),
-                        'resolve' => function($source, $arguments, $context, $resolveInfo) {
-                            return $this->_counterGqlColumns($source, $resolveInfo->fieldName);
-                        },
-                    ];
-                    $event->fields['thisMonthViews'] = [
-                        'name' => 'thisMonthViews',
-                        'type' => Type::int(),
-                        'resolve' => function($source, $arguments, $context, $resolveInfo) {
-                            return $this->_counterGqlColumns($source, $resolveInfo->fieldName);
-                        },
-                    ];
-                    $event->fields['thisYearViews'] = [
-                        'name' => 'thisYearViews',
-                        'type' => Type::int(),
-                        'resolve' => function($source, $arguments, $context, $resolveInfo) {
-                            return $this->_counterGqlColumns($source, $resolveInfo->fieldName);
-                        },
-                    ];
-                    $event->fields['allViews'] = [
-                        'name' => 'allViews',
-                        'type' => Type::int(),
-                        'resolve' => function($source, $arguments, $context, $resolveInfo) {
-                            return $this->_counterGqlColumns($source, $resolveInfo->fieldName);
-                        },
-                    ];
-                    $event->fields['yesterdayViews'] = [
-                        'name' => 'yesterdayViews',
-                        'type' => Type::int(),
-                        'resolve' => function($source, $arguments, $context, $resolveInfo) {
-                            return $this->_counterGqlColumns($source, $resolveInfo->fieldName);
-                        },
-                    ];
-                    $event->fields['previousWeekViews'] = [
-                        'name' => 'previousWeekViews',
-                        'type' => Type::int(),
-                        'resolve' => function($source, $arguments, $context, $resolveInfo) {
-                            return $this->_counterGqlColumns($source, $resolveInfo->fieldName);
-                        },
-                    ];
-                    $event->fields['previousMonthViews'] = [
-                        'name' => 'previousMonthViews',
-                        'type' => Type::int(),
-                        'resolve' => function($source, $arguments, $context, $resolveInfo) {
-                            return $this->_counterGqlColumns($source, $resolveInfo->fieldName);
-                        },
-                    ];
-                    $event->fields['previousYearViews'] = [
-                        'name' => 'previousYearViews',
-                        'type' => Type::int(),
-                        'resolve' => function($source, $arguments, $context, $resolveInfo) {
-                            return $this->_counterGqlColumns($source, $resolveInfo->fieldName);
-                        },
-                    ];
+                    if (HelpersGql::canQueryItem('pageVisitsToday')) {
+                        $event->fields['todayViews'] = [
+                            'name' => 'todayViews',
+                            'type' => Type::int(),
+                            'resolve' => function($source, $arguments, $context, $resolveInfo) {
+                                return $this->_counterGqlColumns($source, $resolveInfo->fieldName);
+                            },
+                        ];
+                    }
+                    if (HelpersGql::canQueryItem('pageVisitsThisWeek')) {
+                        $event->fields['thisWeekViews'] = [
+                            'name' => 'thisWeekViews',
+                            'type' => Type::int(),
+                            'resolve' => function($source, $arguments, $context, $resolveInfo) {
+                                return $this->_counterGqlColumns($source, $resolveInfo->fieldName);
+                            },
+                        ];
+                    }
+                    if (HelpersGql::canQueryItem('pageVisitsThisMonth')) {
+                        $event->fields['thisMonthViews'] = [
+                            'name' => 'thisMonthViews',
+                            'type' => Type::int(),
+                            'resolve' => function($source, $arguments, $context, $resolveInfo) {
+                                return $this->_counterGqlColumns($source, $resolveInfo->fieldName);
+                            },
+                        ];
+                    }
+                    if (HelpersGql::canQueryItem('pageVisitsThisYear')) {
+                        $event->fields['thisYearViews'] = [
+                            'name' => 'thisYearViews',
+                            'type' => Type::int(),
+                            'resolve' => function($source, $arguments, $context, $resolveInfo) {
+                                return $this->_counterGqlColumns($source, $resolveInfo->fieldName);
+                            },
+                        ];
+                    }
+                    if (HelpersGql::canQueryItem('pageVisitsAll')) {
+                        $event->fields['allViews'] = [
+                            'name' => 'allViews',
+                            'type' => Type::int(),
+                            'resolve' => function($source, $arguments, $context, $resolveInfo) {
+                                return $this->_counterGqlColumns($source, $resolveInfo->fieldName);
+                            },
+                        ];
+                    }
+                    if (HelpersGql::canQueryItem('pageVisitsYesterday')) {
+                        $event->fields['yesterdayViews'] = [
+                            'name' => 'yesterdayViews',
+                            'type' => Type::int(),
+                            'resolve' => function($source, $arguments, $context, $resolveInfo) {
+                                return $this->_counterGqlColumns($source, $resolveInfo->fieldName);
+                            },
+                        ];
+                    }
+                    if (HelpersGql::canQueryItem('pageVisitsPreviousWeek')) {
+                        $event->fields['previousWeekViews'] = [
+                            'name' => 'previousWeekViews',
+                            'type' => Type::int(),
+                            'resolve' => function($source, $arguments, $context, $resolveInfo) {
+                                return $this->_counterGqlColumns($source, $resolveInfo->fieldName);
+                            },
+                        ];
+                    }
+                    if (HelpersGql::canQueryItem('pageVisitsPreviousMonth')) {
+                        $event->fields['previousMonthViews'] = [
+                            'name' => 'previousMonthViews',
+                            'type' => Type::int(),
+                            'resolve' => function($source, $arguments, $context, $resolveInfo) {
+                                return $this->_counterGqlColumns($source, $resolveInfo->fieldName);
+                            },
+                        ];
+                    }
+                    if (HelpersGql::canQueryItem('pageVisitsPreviousYear')) {
+                        $event->fields['previousYearViews'] = [
+                            'name' => 'previousYearViews',
+                            'type' => Type::int(),
+                            'resolve' => function($source, $arguments, $context, $resolveInfo) {
+                                return $this->_counterGqlColumns($source, $resolveInfo->fieldName);
+                            },
+                        ];
+                    }
                 }
             }
         );
-        */
     }
 
-    /*
     private function _counterGqlColumns($source, $attribute)
     {
         $elementId = $source->id;
@@ -878,5 +894,4 @@ class Counter extends Plugin
         }
         return $return;
     }
-    */
 }

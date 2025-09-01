@@ -53,6 +53,8 @@ class Settings extends Model
 
     public ?bool $keepElementStatsOnUrlChange = false;
 
+    public ?bool $autoImportJquery = true;
+
     public function rules(): array
     {
         $rules = parent::rules();
