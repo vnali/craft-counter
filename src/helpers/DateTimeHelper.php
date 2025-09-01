@@ -214,6 +214,14 @@ class DateTimeHelper
             */
         }
 
+        // solution if ICU TZData version is old
+        // We calculate and pass the time difference with PHP instead of relying on the Intl module
+        /*
+        $dt = new DateTime('now', new DateTimeZone($tz));
+        $offsetString = $dt->format('P'); // e.g. "+03:30"
+        $icuTz = 'GMT' . $offsetString;
+        */
+
         $intl = new \IntlDateFormatter($locale . '@calendar=' . $calendar, \IntlDateFormatter::FULL, \IntlDateFormatter::FULL, $tz, \IntlDateFormatter::TRADITIONAL, $format);
         $date = $intl->format($dateTime);
 
