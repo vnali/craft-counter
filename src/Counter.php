@@ -219,19 +219,8 @@ class Counter extends Plugin
                                 $newPageVisitsRecord = PageVisitsRecord::find()->where(['page' => $newUrl, 'siteId' => $element->siteId])->one();
                                 if ($oldPageVisitsRecord) {
                                     if ($newPageVisitsRecord) {
-                                        $newPageVisitsRecord->allTime = $newPageVisitsRecord->allTime + $oldPageVisitsRecord->allTime;
-                                        $newPageVisitsRecord->allTimeIgnoreInterval = $newPageVisitsRecord->allTimeIgnoreInterval + $oldPageVisitsRecord->allTimeIgnoreInterval;
-                                        $newPageVisitsRecord->today = $newPageVisitsRecord->today + $oldPageVisitsRecord->today;
-                                        $newPageVisitsRecord->thisWeek = $newPageVisitsRecord->thisWeek + $oldPageVisitsRecord->thisWeek;
-                                        $newPageVisitsRecord->thisMonth = $newPageVisitsRecord->thisMonth + $oldPageVisitsRecord->thisMonth;
-                                        $newPageVisitsRecord->thisYear = $newPageVisitsRecord->thisYear + $oldPageVisitsRecord->thisYear;
-                                        $newPageVisitsRecord->yesterday = $newPageVisitsRecord->yesterday + $oldPageVisitsRecord->yesterday;
-                                        $newPageVisitsRecord->previousWeek = $newPageVisitsRecord->previousWeek + $oldPageVisitsRecord->previousWeek;
-                                        $newPageVisitsRecord->previousMonth = $newPageVisitsRecord->previousMonth + $oldPageVisitsRecord->previousMonth;
-                                        $newPageVisitsRecord->previousYear = $newPageVisitsRecord->previousYear + $oldPageVisitsRecord->previousYear;
-                                        if ($newPageVisitsRecord->save()) {
-                                            $oldPageVisitsRecord->delete();
-                                        }
+                                        $elementId = $element->id;
+                                        craft::info("The new url $newUrl of element $elementId already has statistics");
                                     } else {
                                         $oldPageVisitsRecord->page = $newUrl;
                                         // dont update dateUpdated. update this need check for yesterday and ...
