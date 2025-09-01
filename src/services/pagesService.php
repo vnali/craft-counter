@@ -307,8 +307,6 @@ class pagesService extends Component
      */
     public function top(?string $dateRange, ?string $siteId = null, ?int $limit = null, ?bool $showElementTitle = false, ?array $filters = []): ?array
     {
-        // start time
-        $start = microtime(true);
         if (!$limit) {
             $limit = 20;
         }
@@ -505,11 +503,6 @@ class pagesService extends Component
 
             $visits = array_slice($visits, 0, $limit);
         }
-        // end time
-        $end = microtime(true);
-        // calculate duration
-        $duration = $end - $start;
-        craft::info('execution time for top pages: ' . number_format($duration, 3) . " seconds $dateRange $siteId $limit " . json_encode($filters));
         return $visits;
     }
 
