@@ -7,7 +7,7 @@
     {% set title = decliningPage.page|truncate(50, '...') %}
     {% set tableData = tableData|merge([{
         title: title,
-        url: decliningPage.page,
+        url: decliningPage.url|e,
         current: decliningPage.current,
         previous: decliningPage.previous,
         decline: decliningPage.decline,
