@@ -335,6 +335,17 @@ class WidgetController extends Controller
                     $dbDependency = new DbDependency([
                         'sql' => $rawQuery,
                     ]);
+                    $query = (new Query());
+                    if (Craft::$app->getDb()->getIsPgsql()) {
+                        $query->select(['max("dateUpdated")']);
+                    } else {
+                        $query->select(['max(dateUpdated)']);
+                    }
+                    $query->from('{{%elements}}');
+                    $rawQuery = $query->createCommand()->getRawSql();
+                    $dbDependency2 = new DbDependency([
+                        'sql' => $rawQuery,
+                    ]);
                 }
                 //
                 $expressionDependency = new ExpressionDependency([
@@ -345,15 +356,24 @@ class WidgetController extends Controller
                 if (isset($dbDependency)) {
                     $dependencies[] = $dbDependency;
                 }
+                if (isset($dbDependency2)) {
+                    $dependencies[] = $dbDependency2;
+                }
                 $dependencies[] = $expressionDependency;
                 $dependencies[] = new TagDependency(['tags' => 'counter-plugin']);
-
-                $decliningPages = Counter::$plugin->pages->declining($widget->dateRange, $widget->siteId, $widget->declineType, $widget->limit);
+                $filters = [];
+                if ($widget->sectionHandles) {
+                    $filters['sectionHandles'] = $widget->sectionHandles;
+                }
+                if ($widget->items) {
+                    $filters['items'] = $widget->items;
+                }
+                $decliningPages = Counter::$plugin->pages->declining($widget->dateRange, $widget->siteId, $widget->declineType, $widget->limit, $widget->showElementTitle, $filters);
                 $response = [];
                 foreach ($decliningPages as $decliningPage) {
                     $tableData = [];
                     $tableData['title'] = HelpersStringHelper::safeTruncate($decliningPage['page'], 50, '...', true);
-                    $tableData['url'] = $decliningPage['page'];
+                    $tableData['url'] = $decliningPage['url'];
                     $tableData['current'] = $decliningPage['current'];
                     $tableData['previous'] = $decliningPage['previous'];
                     $tableData['decline'] = $decliningPage['decline'];
@@ -380,6 +400,17 @@ class WidgetController extends Controller
                     $dbDependency = new DbDependency([
                         'sql' => $rawQuery,
                     ]);
+                    $query = (new Query());
+                    if (Craft::$app->getDb()->getIsPgsql()) {
+                        $query->select(['max("dateUpdated")']);
+                    } else {
+                        $query->select(['max(dateUpdated)']);
+                    }
+                    $query->from('{{%elements}}');
+                    $rawQuery = $query->createCommand()->getRawSql();
+                    $dbDependency2 = new DbDependency([
+                        'sql' => $rawQuery,
+                    ]);
                 }
                 //
                 $expressionDependency = new ExpressionDependency([
@@ -390,15 +421,24 @@ class WidgetController extends Controller
                 if (isset($dbDependency)) {
                     $dependencies[] = $dbDependency;
                 }
+                if (isset($dbDependency2)) {
+                    $dependencies[] = $dbDependency2;
+                }
                 $dependencies[] = $expressionDependency;
                 $dependencies[] = new TagDependency(['tags' => 'counter-plugin']);
-
-                $notVisitedPages = Counter::$plugin->pages->notVisited($widget->dateRange, $widget->siteId, $widget->limit, $widget->sortAsc, $widget->calendar);
+                $filters = [];
+                if ($widget->sectionHandles) {
+                    $filters['sectionHandles'] = $widget->sectionHandles;
+                }
+                if ($widget->items) {
+                    $filters['items'] = $widget->items;
+                }
+                $notVisitedPages = Counter::$plugin->pages->notVisited($widget->dateRange, $widget->siteId, $widget->limit, $widget->sortAsc, $widget->calendar, $widget->showElementTitle, $filters);
                 $response = [];
                 foreach ($notVisitedPages as $notVisitedPage) {
                     $tableData = [];
-                    $tableData['title'] = $notVisitedPage['page'] . '...';
-                    $tableData['url'] = $notVisitedPage['page'];
+                    $tableData['title'] = HelpersStringHelper::safeTruncate($notVisitedPage['page'], 50, '...', true);
+                    $tableData['url'] = $notVisitedPage['url'];
                     $tableData['lastVisit'] = $notVisitedPage['lastVisit'];
                     $response[] = $tableData;
                 }
@@ -423,6 +463,17 @@ class WidgetController extends Controller
                     $dbDependency = new DbDependency([
                         'sql' => $rawQuery,
                     ]);
+                    $query = (new Query());
+                    if (Craft::$app->getDb()->getIsPgsql()) {
+                        $query->select(['max("dateUpdated")']);
+                    } else {
+                        $query->select(['max(dateUpdated)']);
+                    }
+                    $query->from('{{%elements}}');
+                    $rawQuery = $query->createCommand()->getRawSql();
+                    $dbDependency2 = new DbDependency([
+                        'sql' => $rawQuery,
+                    ]);
                 }
                 //
                 $expressionDependency = new ExpressionDependency([
@@ -433,15 +484,25 @@ class WidgetController extends Controller
                 if (isset($dbDependency)) {
                     $dependencies[] = $dbDependency;
                 }
+                if (isset($dbDependency2)) {
+                    $dependencies[] = $dbDependency2;
+                }
                 $dependencies[] = $expressionDependency;
                 $dependencies[] = new TagDependency(['tags' => 'counter-plugin']);
 
-                $trendingPages = Counter::$plugin->pages->trending($widget->dateRange, $widget->siteId, $widget->growthType, $widget->ignoreNewPages, $widget->limit);
+                $filters = [];
+                if ($widget->sectionHandles) {
+                    $filters['sectionHandles'] = $widget->sectionHandles;
+                }
+                if ($widget->items) {
+                    $filters['items'] = $widget->items;
+                }
+                $trendingPages = Counter::$plugin->pages->trending($widget->dateRange, $widget->siteId, $widget->growthType, $widget->ignoreNewPages, $widget->limit, $widget->showElementTitle, $filters);
                 $response = [];
                 foreach ($trendingPages as $trendingPage) {
                     $tableData = [];
                     $tableData['title'] = HelpersStringHelper::safeTruncate($trendingPage['page'], 50, '...', true);
-                    $tableData['url'] = $trendingPage['page'];
+                    $tableData['url'] = $trendingPage['url'];
                     $tableData['current'] = $trendingPage['current'];
                     $tableData['previous'] = $trendingPage['previous'];
                     $tableData['growth'] = $trendingPage['growth'];

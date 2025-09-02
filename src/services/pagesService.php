@@ -514,9 +514,11 @@ class pagesService extends Component
      * @param string|null $growthType
      * @param bool|null $ignoreNewPages
      * @param int|null $limit
+     * @param bool|null $showElementTitle
+     * @param array|null $filters
      * @return array|null
      */
-    public function trending(string $dateRange, ?string $siteId = null, ?string $growthType = null, ?bool $ignoreNewPages = null, ?int $limit = null): ?array
+    public function trending(string $dateRange, ?string $siteId = null, ?string $growthType = null, ?bool $ignoreNewPages = null, ?int $limit = null, ?bool $showElementTitle = false, ?array $filters = []): ?array
     {
         $siteService = Craft::$app->sites;
 
@@ -537,7 +539,7 @@ class pagesService extends Component
             $growthType = 'count';
         }
 
-        return $this->_analyzePages('trending', $dateRange, $siteId, $growthType, $ignoreNewPages, $limit);
+        return $this->_analyzePages('trending', $dateRange, $siteId, $growthType, $ignoreNewPages, $limit, $showElementTitle, $filters);
     }
 
     /**
@@ -547,9 +549,11 @@ class pagesService extends Component
      * @param string|null $siteId
      * @param string|null $declineType
      * @param int|null $limit
+     * @param bool|null $showElementTitle
+     * @param array|null $filters
      * @return array|null
      */
-    public function declining(string $dateRange, ?string $siteId = null, ?string $declineType = null, ?int $limit = null): ?array
+    public function declining(string $dateRange, ?string $siteId = null, ?string $declineType = null, ?int $limit = null, ?bool $showElementTitle = false, ?array $filters = []): ?array
     {
         $siteService = Craft::$app->sites;
         if (!$siteId) {
@@ -565,7 +569,7 @@ class pagesService extends Component
             $declineType = 'count';
         }
 
-        return $this->_analyzePages('declining', $dateRange, $siteId, $declineType, true, $limit);
+        return $this->_analyzePages('declining', $dateRange, $siteId, $declineType, true, $limit, $showElementTitle, $filters);
     }
 
     /**
@@ -579,7 +583,7 @@ class pagesService extends Component
      * @param int $limit
      * @return array|null
      */
-    private function _analyzePages(string $analyze, string $dateRange, string $siteId, string $analyzeType, bool $ignoreNewPages, int $limit): ?array
+    private function _analyzePages(string $analyze, string $dateRange, string $siteId, string $analyzeType, bool $ignoreNewPages, int $limit, $showElementTitle = false, ?array $filters = []): ?array
     {
         switch ($dateRange) {
             case 'today':
@@ -711,14 +715,22 @@ class pagesService extends Component
                 }
 
                 if ($valid && ($count < $limit)) {
-                    $count++;
-                    $visit = [];
-                    $visit['page'] = $row['page'];
-                    $visit['current'] = $row[$dateRange];
-                    $visit['previous'] = $row[$previous];
-                    $visit[$index] = $row['result'] . (($analyzeType == 'percentage') ? '%' : '');
-                    $visit['debugMessage'] = 'ok';
-                    $visits[] = $visit;
+                    if ($this->_showPage($row, $filters)) {
+                        $count++;
+                        $visit = [];
+
+                        list($title, $siteId, $elementId, $elementType) = $this->_pageAttributes($row);
+                        $visit['siteId'] = $siteId;
+                        $visit['elementId'] = $elementId;
+                        $visit['elementType'] = $elementType;
+                        $visit['url'] = $row['page'];
+                        $visit['page'] = !$showElementTitle ? $row['page'] : $title;
+                        $visit['current'] = $row[$dateRange];
+                        $visit['previous'] = $row[$previous];
+                        $visit[$index] = $row['result'] . (($analyzeType == 'percentage') ? '%' : '');
+                        $visit['debugMessage'] = 'ok';
+                        $visits[] = $visit;
+                    }
                 }
 
                 if ($count >= $limit) {
@@ -738,9 +750,11 @@ class pagesService extends Component
      * @param int|null $limit
      * @param bool|null $sortAsc
      * @param string|null $calendar
+     * @param bool|null $showElementTitle
+     * @param array|null $filters
      * @return array|null
      */
-    public function notVisited(string $dateRange, ?string $siteId = null, ?int $limit = null, ?bool $sortAsc = false, ?string $calendar = null): ?array
+    public function notVisited(string $dateRange, ?string $siteId = null, ?int $limit = null, ?bool $sortAsc = false, ?string $calendar = null, ?bool $showElementTitle = false, ?array $filters = []): ?array
     {
         $query = new Query();
         $query->from('{{%counter_page_visits}}' . ' page_visits');
@@ -835,11 +849,18 @@ class pagesService extends Component
                 }
             }
             if ($valid) {
-                $result = [];
-                $result['lastVisit'] = (($calendar == 'gregorian') ? $dateVisited->format('Y-m-d H:i:s') : DateTimeHelper::intlDate($dateVisited, $calendar));
-                $result['page'] = $row['page'];
-                $pages[] = $result;
-                $count++;
+                if ($this->_showPage($row, $filters)) {
+                    $result = [];
+                    $result['lastVisit'] = (($calendar == 'gregorian') ? $dateVisited->format('Y-m-d H:i:s') : DateTimeHelper::intlDate($dateVisited, $calendar));
+                    list($title, $siteId, $elementId, $elementType) = $this->_pageAttributes($row);
+                    $result['page'] = !$showElementTitle ? $row['page'] : $title;
+                    $result['siteId'] = $siteId;
+                    $result['elementId'] = $elementId;
+                    $result['elementType'] = $elementType;
+                    $result['url'] = $row['page'];
+                    $pages[] = $result;
+                    $count++;
+                }
             }
         }
 
@@ -849,20 +870,29 @@ class pagesService extends Component
     /**
      * Returns element title, siteId, elementId and element type if page is related to an element
      *
-     * @param PageVisitsRecord $pageRecord
+     * @param PageVisitsRecord|array $pageItem
      * @return array
      */
-    private static function _pageAttributes(PageVisitsRecord $pageRecord): array
+    private static function _pageAttributes(PageVisitsRecord|array $pageItem): array
     {
-        $title = $pageRecord->page;
+        if (is_array($pageItem)) {
+            $title = $pageItem['page'];
+            $pageId = $pageItem['id'];
+            $siteId = $pageItem['siteId'];
+            $page = $pageItem['page'];
+        } else {
+            $title = $pageItem->page;
+            $pageId = $pageItem->id;
+            $siteId = $pageItem->siteId;
+            $page = $pageItem->page;
+        }
         $cache = Craft::$app->getCache();
-        $elementRecord = $cache->get('counter-page-record-element-' . $pageRecord->id);
-        $siteId = $pageRecord->siteId;
+        $elementRecord = $cache->get('counter-page-record-element-' . $pageId);
         if ($elementRecord === false) {
             $site = Craft::$app->sites->getSiteById($siteId);
             if ($site) {
                 $siteUrl = $site->getBaseUrl();
-                $uri = str_replace($siteUrl, '', $pageRecord->page);
+                $uri = str_replace($siteUrl, '', $page);
 
                 $currentVersion = Craft::$app->version;
                 $targetVersion = '5.0.0';
@@ -912,23 +942,31 @@ class pagesService extends Component
     /**
      * Check if page should be shown in result
      *
-     * @param PageVisitsRecord $pageRecord
+     * @param PageVisitsRecord|array $pageItem
      * @param array $filters
      * @return bool
      */
-    private static function _showPage(PageVisitsRecord $pageRecord, ?array $filters = []): bool
+    private static function _showPage(PageVisitsRecord|array $pageItem, ?array $filters = []): bool
     {
+        if (is_array($pageItem)) {
+            $pageId = $pageItem['id'];
+            $siteId = $pageItem['siteId'];
+            $page = $pageItem['page'];
+        } else {
+            $pageId = $pageItem->id;
+            $siteId = $pageItem->siteId;
+            $page = $pageItem->page;
+        }
         if ($filters) {
             $cache = Craft::$app->getCache();
-            $elementRecord = $cache->get('counter-page-record-element-' . $pageRecord->id);
+            $elementRecord = $cache->get('counter-page-record-element-' . $pageId);
             if ($elementRecord === false) {
-                $siteId = $pageRecord->siteId;
                 $site = Craft::$app->sites->getSiteById($siteId);
                 if (!$site) {
                     return false;
                 }
                 $siteUrl = $site->getBaseUrl();
-                $uri = str_replace($siteUrl, '', $pageRecord->page);
+                $uri = str_replace($siteUrl, '', $page);
 
                 $currentVersion = Craft::$app->version;
                 $targetVersion = '5.0.0';
@@ -979,7 +1017,7 @@ class pagesService extends Component
                     $dependencies = [];
                     $dependencies[] = new TagDependency(['tags' => 'counter-plugin']);
                     $dependencies[] = $dbDependency;
-                    $cache->set('counter-page-record-element-' . $pageRecord->id, $elementRecord, 3600, new ChainedDependency([
+                    $cache->set('counter-page-record-element-' . $pageId, $elementRecord, 3600, new ChainedDependency([
                         'dependencies' => $dependencies,
                     ]));
                 }
