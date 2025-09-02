@@ -142,10 +142,12 @@ class CounterVariable
      * @param string|null $growthType
      * @param bool|null $ignoreNewPages
      * @param int|null $limit
+     * @param bool|null $showElementTitle
+     * @param array|null $filters
      * @return array|null
      */
-    public function trendingPages(string $dateRange, ?string $siteId = null, ?string $growthType = null, ?bool $ignoreNewPages = null, ?int $limit = null): ?array
+    public function trendingPages(string $dateRange, ?string $siteId = null, ?string $growthType = null, ?bool $ignoreNewPages = null, ?int $limit = null, ?bool $showElementTitle = false, ?array $filters = []): ?array
     {
-        return Counter::$plugin->pages->trending($dateRange, $siteId, $growthType, $ignoreNewPages, $limit);
+        return Counter::$plugin->pages->trending($dateRange, $siteId, $growthType, $ignoreNewPages, $limit, $showElementTitle, $filters);
     }
 }

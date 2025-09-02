@@ -49,6 +49,16 @@ class TrendingPagesQuery extends Query
                         $ignoreNewPages = null;
                     }
 
+                    $showElementTitle = null;
+                    if (isset($args['showElementTitle'])) {
+                        $showElementTitle = $args['showElementTitle'];
+                    }
+
+                    $filters = null;
+                    if (isset($args['filters'])) {
+                        $filters = $args['filters'];
+                    }
+
                     // Check access to dateRange
                     if (!Gql::canQueryItem('trendingPages' . ucfirst($dateRange))) {
                         return [['debugMessage' => 'Selected dateRange is not allowed']];
@@ -80,7 +90,7 @@ class TrendingPagesQuery extends Query
                     // Reindex the array (optional)
                     $fields = array_values($fields);
 
-                    $result = Counter::$plugin->pages->trending($dateRange, $siteId, $growthType, $ignoreNewPages, $limit);
+                    $result = Counter::$plugin->pages->trending($dateRange, $siteId, $growthType, $ignoreNewPages, $limit, $showElementTitle, $filters);
                     return $result;
                 },
                 'description' => 'This query is used to query trending pages.',

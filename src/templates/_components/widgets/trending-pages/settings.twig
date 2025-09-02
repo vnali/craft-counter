@@ -65,6 +65,30 @@
         tip: "To exclude pages without data from the previous date range in the results."|t('counter'),
     }) }}
 
+    {{ forms.multiSelectField({
+        label: 'Items'|t('counter'),
+        id: 'items',
+        name: 'items',
+        options: items ?? [],
+        values: widget.items ?? null,
+    }) }}
+
+    {{ forms.multiSelectField({
+        label: 'Sections'|t('counter'),
+        id: 'sectionHandles',
+        name: 'sectionHandles',
+        options: sections ?? [],
+        values: widget.sectionHandles ?? null,
+    }) }}
+
+    {{ forms.lightswitchField({
+        id: 'showElementTitle',
+        name: 'showElementTitle',
+        label: "Show element's title"|t('counter'),
+        value: 1,
+        on: widget.showElementTitle
+    }) }}
+
     {{ forms.textField({
         label: 'Limit'|t('counter'),
         id: 'limit',
@@ -103,6 +127,16 @@
 {% endcss %}
 
 {% js %}
+    $('#{{ namespaceId }} div[data-attribute=sectionHandles] select').selectize({
+        plugins: ['remove_button'],
+        dropdownParent: 'body',
+    });
+
+    $('#{{ namespaceId }} div[data-attribute=items] select').selectize({
+        plugins: ['remove_button'],
+        dropdownParent: 'body',
+    });
+
     if ($('div[data-attribute="growthTypeField"] select').val() == 'percentage') {
         $('div[data-attribute="ignoreNewPages"]').css('display', 'none');
     } else {

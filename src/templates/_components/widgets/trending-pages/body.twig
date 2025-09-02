@@ -7,7 +7,7 @@
     {% set title = trendingPage.page|truncate(50, '...') %}
     {% set tableData = tableData|merge([{
         title: title,
-        url: trendingPage.page|e,
+        url: trendingPage.url|e,
         current: trendingPage.current,
         previous: trendingPage.previous,
         growth: trendingPage.growth,
