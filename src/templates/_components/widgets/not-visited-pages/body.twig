@@ -7,7 +7,7 @@
     {% set title = notVisitedPage.page|truncate(50, '...') %}
     {% set tableData = tableData|merge([{
         title: title,
-        url: notVisitedPage.page|e,
+        url: notVisitedPage.url|e,
         lastVisit: notVisitedPage.lastVisit,
     }]) %}
 {% endfor %}

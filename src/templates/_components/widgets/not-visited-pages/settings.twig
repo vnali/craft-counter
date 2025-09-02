@@ -42,6 +42,30 @@
         tip: 'Results include pages not accessed within this range but viewed earlier.'|t('counter'),
     }, rangeInput) }}
 
+    {{ forms.multiSelectField({
+        label: 'Items'|t('counter'),
+        id: 'items',
+        name: 'items',
+        options: items ?? [],
+        values: widget.items ?? null,
+    }) }}
+
+    {{ forms.multiSelectField({
+        label: 'Sections'|t('counter'),
+        id: 'sectionHandles',
+        name: 'sectionHandles',
+        options: sections ?? [],
+        values: widget.sectionHandles ?? null,
+    }) }}
+
+    {{ forms.lightswitchField({
+        id: 'showElementTitle',
+        name: 'showElementTitle',
+        label: "Show element's title"|t('counter'),
+        value: 1,
+        on: widget.showElementTitle
+    }) }}
+
     {{ forms.textField({
         label: 'Limit'|t('counter'),
         id: 'limit',
@@ -93,6 +117,18 @@
         display: none;
     }
 {% endcss %}
+
+{% js %}
+    $('#{{ namespaceId }} div[data-attribute=sectionHandles] select').selectize({
+        plugins: ['remove_button'],
+        dropdownParent: 'body',
+    });
+
+    $('#{{ namespaceId }} div[data-attribute=items] select').selectize({
+        plugins: ['remove_button'],
+        dropdownParent: 'body',
+    });
+{% endjs %}
 
 {#
 {% js %}

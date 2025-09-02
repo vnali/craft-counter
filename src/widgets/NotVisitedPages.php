@@ -5,6 +5,9 @@ namespace vnali\counter\widgets;
 use Craft;
 use craft\base\Widget;
 use craft\db\Query;
+use craft\elements\Category;
+use craft\elements\Entry;
+use craft\elements\Tag;
 use craft\helpers\StringHelper;
 use Exception;
 use vnali\counter\assets\CounterWidgetTableAsset;
@@ -22,6 +25,12 @@ class NotVisitedPages extends Widget
     public ?string $siteId = null;
 
     public ?string $dateRange = 'today';
+
+    public ?bool $showElementTitle = null;
+
+    public ?array $sectionHandles = [];
+
+    public ?array $items = [];
 
     public int $limit = 5;
 
@@ -158,6 +167,18 @@ class NotVisitedPages extends Widget
                     $dbDependency = new DbDependency([
                         'sql' => $rawQuery,
                     ]);
+                    // a dependency for elements changes
+                    $query = (new Query());
+                    if (Craft::$app->getDb()->getIsPgsql()) {
+                        $query->select(['max("dateUpdated")']);
+                    } else {
+                        $query->select(['max(dateUpdated)']);
+                    }
+                    $query->from('{{%elements}}');
+                    $rawQuery = $query->createCommand()->getRawSql();
+                    $dbDependency2 = new DbDependency([
+                        'sql' => $rawQuery,
+                    ]);
                 }
                 $expressionDependency = new ExpressionDependency([
                     'expression' => 'date("Y-m-d")',
@@ -166,9 +187,19 @@ class NotVisitedPages extends Widget
                 if (isset($dbDependency)) {
                     $dependencies[] = $dbDependency;
                 }
+                if (isset($dbDependency2)) {
+                    $dependencies[] = $dbDependency2;
+                }
                 $dependencies[] = $expressionDependency;
                 $dependencies[] = new TagDependency(['tags' => 'counter-plugin']);
-                $notVisitedPages = Counter::$plugin->pages->notVisited($this->dateRange, $this->siteId, $this->limit, $this->sortAsc, $this->calendar);
+                $filters = [];
+                if ($this->sectionHandles) {
+                    $filters['sectionHandles'] = $this->sectionHandles;
+                }
+                if ($this->items) {
+                    $filters['items'] = $this->items;
+                }
+                $notVisitedPages = Counter::$plugin->pages->notVisited($this->dateRange, $this->siteId, $this->limit, $this->sortAsc, $this->calendar, $this->showElementTitle, $filters);
                 $cache->set($cacheKey, $notVisitedPages, $cacheWidgetsSeconds, new ChainedDependency([
                     'dependencies' => $dependencies,
                 ]));
@@ -195,6 +226,49 @@ class NotVisitedPages extends Widget
         $id = 'not-visited-pages' . StringHelper::randomString();
         $namespaceId = Craft::$app->getView()->namespaceInputId($id);
 
+        $currentVersion = Craft::$app->version;
+        $targetVersion = '5.0.0';
+        $sectionItems = [];
+        if (version_compare($currentVersion, $targetVersion, '>=')) {
+            $sections = Craft::$app->entries->getAllSections();
+        } else {
+            $sections = Craft::$app->sections->getAllSections();
+        }
+        foreach ($sections as $section) {
+            $currentUser = Craft::$app->getUser()->getIdentity();
+            if ($currentUser->can("viewEntries:$section->uid")) {
+                $sectionItem = [];
+                $sectionItem['value'] = $section->handle;
+                $sectionItem['label'] = $section->name;
+                $sectionItems[] = $sectionItem;
+            }
+        }
+
+        $items = [];
+        // short name for core element types
+        $item['value'] = 'page';
+        $item['label'] = 'Page';
+        $items[] = $item;
+        $item['value'] = 'entry';
+        $item['label'] = 'Entry';
+        $items[] = $item;
+        $item['value'] = 'category';
+        $item['label'] = 'Category';
+        $items[] = $item;
+        $item['value'] = 'tag';
+        $item['label'] = 'Tag';
+        $items[] = $item;
+        $elementTypes = craft::$app->elements->getAllElementTypes();
+        foreach ($elementTypes as $elementType) {
+            if ($elementType::hasUris() && ($elementType != Entry::class) && ($elementType != Category::class) && ($elementType != Tag::class)) {
+                $item = [];
+                // prevent breaking selectize with encoding values
+                $item['value'] = urlencode($elementType);
+                $item['label'] = $elementType::displayName();
+                $items[] = $item;
+            }
+        }
+
         /** @var Settings $settings */
         $settings = Counter::$plugin->getSettings();
         $showAllCalendars = $settings->showAllCalendars;
@@ -204,6 +278,8 @@ class NotVisitedPages extends Widget
             'namespaceId' => $namespaceId,
             'widget' => $this,
             'showAllCalendars' => $showAllCalendars,
+            'sections' => $sectionItems,
+            'items' => $items,
         ]);
     }
 
@@ -214,6 +290,7 @@ class NotVisitedPages extends Widget
     {
         $rules = parent::defineRules();
         $rules[] = [['dateRange'], 'safe'];
+        $rules[] = [['showElementTitle'], 'in', 'range' => ['0', '1']];
         $rules[] = [['sortAsc'], 'in', 'range' => ['0', '1']];
         $rules[] = [['limit'], 'integer', 'min' => 1, 'max' => 20];
         $rules[] = [['siteId'], SiteValidator::class, 'skipOnEmpty' => false];
