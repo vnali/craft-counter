@@ -7,7 +7,6 @@ use vnali\counter\models\Settings;
 
 class UrlHelper
 {
-
     /**
      * Remove domain
      *
