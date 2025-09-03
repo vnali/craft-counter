@@ -7,6 +7,33 @@ use vnali\counter\models\Settings;
 
 class UrlHelper
 {
+
+    /**
+     * Remove domain
+     *
+     * @param string $url
+     * @return string
+     */
+    public static function removeDomainFromResult(string $url): string
+    {
+        $pluginSettings = Counter::$plugin->getSettings();
+        /** @var Settings $pluginSettings */
+        $removeDomainFromResult = $pluginSettings->removeDomainFromResult;
+        if ($removeDomainFromResult) {
+            // Use parse_url to get the path, query, and fragment
+            $path = parse_url($url, PHP_URL_PATH);
+            $query = parse_url($url, PHP_URL_QUERY);
+            $fragment = parse_url($url, PHP_URL_FRAGMENT);
+
+            // Combine them
+            $url = $path
+                . ($query ? '?' . $query : '')
+                . ($fragment ? '#' . $fragment : '');
+        }
+
+        return $url;
+    }
+
     /**
      * Remove query params from page URL
      *
@@ -68,6 +95,25 @@ class UrlHelper
             $newUrl .= '#' . $parsedUrl['fragment'];
         }
         return $newUrl;
+    }
+
+    /**
+     * Remove fragment from page URL
+     *
+     * @param string $url
+     * @return string
+     */
+    public static function removeUrlFragment(string $url): string
+    {
+        $parts = parse_url($url);
+
+        // Rebuild URL without the fragment
+        $result = $parts['scheme'] . '://' . $parts['host']
+            . (isset($parts['port']) ? ':' . $parts['port'] : '')
+            . ($parts['path'] ?? '')
+            . (isset($parts['query']) ? '?' . $parts['query'] : '');
+
+        return $result;
     }
 
     /**

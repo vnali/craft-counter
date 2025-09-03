@@ -19,6 +19,7 @@ use IntlCalendar;
 use IntlDateFormatter;
 use vnali\counter\Counter;
 use vnali\counter\helpers\DateTimeHelper;
+use vnali\counter\helpers\UrlHelper;
 use vnali\counter\models\Settings;
 use vnali\counter\records\PageVisitsRecord;
 use yii\base\Component;
@@ -434,7 +435,7 @@ class pagesService extends Component
                     $count++;
                     $visit = [];
                     list($title, $siteId, $elementId, $elementType) = $this->_pageAttributes($pageVisitRecord);
-                    $visit['page'] = !$showElementTitle ? $pageVisitRecord->page : $title;
+                    $visit['page'] = !$showElementTitle ? UrlHelper::removeDomainFromResult($pageVisitRecord->page) : $title;
                     $visit['url'] = $pageVisitRecord->page;
                     $visit['visits'] = $pageVisitRecord->{$dateRange};
                     $visit['siteId'] = $siteId;
@@ -481,7 +482,7 @@ class pagesService extends Component
                         $count++;
                         $visit = [];
                         list($title, $siteId, $elementId, $elementType) = $this->_pageAttributes($pageVisitRecord);
-                        $visit['page'] = !$showElementTitle ? $pageVisitRecord->page : $title;
+                        $visit['page'] = !$showElementTitle ? UrlHelper::removeDomainFromResult($pageVisitRecord->page) : $title;
                         $visit['siteId'] = $siteId;
                         $visit['elementId'] = $elementId;
                         $visit['elementType'] = $elementType;
@@ -724,7 +725,7 @@ class pagesService extends Component
                         $visit['elementId'] = $elementId;
                         $visit['elementType'] = $elementType;
                         $visit['url'] = $row['page'];
-                        $visit['page'] = !$showElementTitle ? $row['page'] : $title;
+                        $visit['page'] = !$showElementTitle ? UrlHelper::removeDomainFromResult($row['page']) : $title;
                         $visit['current'] = $row[$dateRange];
                         $visit['previous'] = $row[$previous];
                         $visit[$index] = $row['result'] . (($analyzeType == 'percentage') ? '%' : '');
@@ -853,7 +854,7 @@ class pagesService extends Component
                     $result = [];
                     $result['lastVisit'] = (($calendar == 'gregorian') ? $dateVisited->format('Y-m-d H:i:s') : DateTimeHelper::intlDate($dateVisited, $calendar));
                     list($title, $siteId, $elementId, $elementType) = $this->_pageAttributes($row);
-                    $result['page'] = !$showElementTitle ? $row['page'] : $title;
+                    $result['page'] = !$showElementTitle ? UrlHelper::removeDomainFromResult($row['page']) : $title;
                     $result['siteId'] = $siteId;
                     $result['elementId'] = $elementId;
                     $result['elementType'] = $elementType;

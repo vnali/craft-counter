@@ -22,5 +22,6 @@ return [
         'cacheWidgetsSeconds' => 0, // default is 0. when this is not set or is 0, widgets use default caching system so cached results are used as long as the cached data is valid
         'headlessToken' => 'ComplexToken', // Token to send from frontend for counting in headless mode
         'autoImportJquery' => true, // When the 'Support outdated browsers' setting is enabled, the Counter plugin imports jQuery. Set this to false if your frontend already includes jQuery
+        'removeDomainFromResult' => true, // Remove domain part of url from statistics results
     ],
 ];
