@@ -239,6 +239,9 @@ class counterService extends Component
             $pageUrl = CounterUrlHelper::removeAllQueryParams($pageUrl);
         } elseif ($pluginSettings->removeQueryParams) {
             $pageUrl = CounterUrlHelper::removeQueryParams($pageUrl);
+        } elseif ($pluginSettings->removeUrlFragment) {
+            // removeQueryParams and removeAllQueryParams, also check the 'remove fragment' setting; otherwise, remove the fragment here
+            $pageUrl = CounterUrlHelper::removeUrlFragment($pageUrl);
         }
         $pageUrl = CounterUrlHelper::trimURL($pageUrl, 2048, 3072);
 
