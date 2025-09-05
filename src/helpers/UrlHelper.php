@@ -15,7 +15,7 @@ class UrlHelper
      */
     public static function removeDomainFromResult(string $url): string
     {
-        if (filter_var($url, FILTER_VALIDATE_URL) !== false) {
+        if (parse_url($url, PHP_URL_HOST) && parse_url($url, PHP_URL_SCHEME)) {
             $pluginSettings = Counter::$plugin->getSettings();
             /** @var Settings $pluginSettings */
             $removeDomainFromResult = $pluginSettings->removeDomainFromResult;
