@@ -25,7 +25,7 @@ class TrendingPagesArguments
             'ignoreNewPages' => [
                 'name' => 'ignoreNewPages',
                 'type' => Type::BOOLEAN(),
-                'description' => 'Ignore new pages',
+                'description' => 'Exclude pages without previous visits',
             ],
             'siteId' => [
                 'name' => 'siteId',

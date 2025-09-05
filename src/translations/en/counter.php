@@ -28,6 +28,7 @@ return [
     'Decline' => 'Decline',
     'Declining Pages' => 'Declining Pages',
     'Disabling this option will make the page load faster.' => 'Disabling this option will make the page load faster.',
+    'Exclude pages without previous visits' => 'Exclude pages without previous visits',
     'General settings saved.' => 'General settings saved.',
     'Gregorian' => 'Gregorian',
     'Growth type' => 'Growth type',

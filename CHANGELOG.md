@@ -5,6 +5,7 @@
 - Changed the 'Trending pages', 'Declining pages' and 'Not visited pages' widgets to filter pages related to elements and return the element's title. [(docs)](https://plugins.vnali.dev/counter/widgets#trending-pages)
 - Changed the 'trendingPages' statistics to filter pages related to elements and return element's title. [(docs)](https://plugins.vnali.dev/counter/statistics/trending-pages)
 - Changed the 'trendingPages' statistics to return the url, elementId, elementType, and siteId. [(docs)](https://plugins.vnali.dev/counter/statistics/trending-pages)
+- Changed the 'Ignore new pages' label in the Trending page widget to 'Exclude pages without previous visits' for better clarity.
 - Fixed a bug where the 'Remove the URL fragment' setting only worked if either 'Remove all query parameters' or 'Remove the URL fragment' was enabled.
 
 ## 1.1.0-beta.1 - 2025-08-28
