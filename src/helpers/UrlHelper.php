@@ -15,21 +15,22 @@ class UrlHelper
      */
     public static function removeDomainFromResult(string $url): string
     {
-        $pluginSettings = Counter::$plugin->getSettings();
-        /** @var Settings $pluginSettings */
-        $removeDomainFromResult = $pluginSettings->removeDomainFromResult;
-        if ($removeDomainFromResult) {
-            // Use parse_url to get the path, query, and fragment
-            $path = parse_url($url, PHP_URL_PATH);
-            $query = parse_url($url, PHP_URL_QUERY);
-            $fragment = parse_url($url, PHP_URL_FRAGMENT);
+        if (filter_var($url, FILTER_VALIDATE_URL) !== false) {
+            $pluginSettings = Counter::$plugin->getSettings();
+            /** @var Settings $pluginSettings */
+            $removeDomainFromResult = $pluginSettings->removeDomainFromResult;
+            if ($removeDomainFromResult) {
+                // Use parse_url to get the path, query, and fragment
+                $path = parse_url($url, PHP_URL_PATH);
+                $query = parse_url($url, PHP_URL_QUERY);
+                $fragment = parse_url($url, PHP_URL_FRAGMENT);
 
-            // Combine them
-            $url = $path
-                . ($query ? '?' . $query : '')
-                . ($fragment ? '#' . $fragment : '');
+                // Combine them
+                $url = $path
+                    . ($query ? '?' . $query : '')
+                    . ($fragment ? '#' . $fragment : '');
+            }
         }
-
         return $url;
     }
 
