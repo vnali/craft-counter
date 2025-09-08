@@ -8,7 +8,7 @@ use vnali\counter\models\Settings;
 class UrlHelper
 {
     /**
-     * Remove domain
+     * Remove domain from URL
      *
      * @param string $url
      * @return string

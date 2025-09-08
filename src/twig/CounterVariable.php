@@ -7,6 +7,7 @@ namespace vnali\counter\twig;
 
 use Craft;
 use vnali\counter\Counter;
+use vnali\counter\helpers\UrlHelper;
 
 class CounterVariable
 {
@@ -149,5 +150,16 @@ class CounterVariable
     public function trendingPages(string $dateRange, ?string $siteId = null, ?string $growthType = null, ?bool $ignoreNewPages = null, ?int $limit = null, ?bool $showElementTitle = false, ?array $filters = []): ?array
     {
         return Counter::$plugin->pages->trending($dateRange, $siteId, $growthType, $ignoreNewPages, $limit, $showElementTitle, $filters);
+    }
+
+    /**
+     * Remove domain from URL
+     *
+     * @param string $url
+     * @return string
+     */
+    public function removeDomainFromResult(string $url): string
+    {
+        return UrlHelper::removeDomainFromResult($url);
     }
 }
