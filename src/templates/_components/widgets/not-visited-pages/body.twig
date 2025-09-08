@@ -4,10 +4,13 @@
 {% set tableData = [] %}
 
 {% for notVisitedPage in notVisitedPages %}
-    {% set title = notVisitedPage.page|truncate(50, '...') %}
+    {% set title = craft.counter.removeDomainFromResult(notVisitedPage.page) %}
+    {% if widgetTitleTruncateLength is integer and widgetTitleTruncateLength != 0 %}
+        {% set title = title|truncate(widgetTitleTruncateLength, '...') %}
+    {% endif %}
     {% set tableData = tableData|merge([{
         title: title,
-        url: notVisitedPage.url|e,
+        url: notVisitedPage.url,
         lastVisit: notVisitedPage.lastVisit,
     }]) %}
 {% endfor %}

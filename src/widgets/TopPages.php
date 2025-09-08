@@ -145,13 +145,14 @@ class TopPages extends Widget
         $view->registerAssetBundle(CounterWidgetTableAsset::class);
         $widget = $this;
 
+        $settings = Counter::$plugin->getSettings();
         if (!$widget->useAjax) {
             $cache = Craft::$app->getCache();
             $cacheKey = 'counter-plugin-widget-' . $widget->id;
             $topPages = $cache->get($cacheKey);
+            /** @var Settings $settings */
+            $widgetTitleTruncateLength = $settings->widgetTitleTruncateLength;
             if ($topPages === false) {
-                $settings = Counter::$plugin->getSettings();
-                /** @var Settings $settings */
                 $cacheWidgetsSeconds = $settings->cacheWidgetsSeconds;
                 if (!$cacheWidgetsSeconds) {
                     $query = (new Query())
@@ -207,7 +208,7 @@ class TopPages extends Widget
                 ]));
             }
 
-            return $view->renderTemplate('counter/_components/widgets/top-pages/body', compact('widget', 'id', 'namespaceId', 'topPages'));
+            return $view->renderTemplate('counter/_components/widgets/top-pages/body', compact('widget', 'id', 'namespaceId', 'topPages', 'widgetTitleTruncateLength'));
         } else {
             return $view->renderTemplate('counter/_components/widgets/top-pages/body-ajax', compact('widget', 'id', 'namespaceId'));
         }

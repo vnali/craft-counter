@@ -149,13 +149,14 @@ class DecliningPages extends Widget
 
         $widget = $this;
 
+        $settings = Counter::$plugin->getSettings();
         if (!$widget->useAjax) {
             $cache = Craft::$app->getCache();
             $cacheKey = 'counter-plugin-widget-' . $widget->id;
             $decliningPages = $cache->get($cacheKey);
+            /** @var Settings $settings */
+            $widgetTitleTruncateLength = $settings->widgetTitleTruncateLength;
             if ($decliningPages === false) {
-                $settings = Counter::$plugin->getSettings();
-                /** @var Settings $settings */
                 $cacheWidgetsSeconds = $settings->cacheWidgetsSeconds;
                 if (!$cacheWidgetsSeconds) {
                     $query = (new Query())
@@ -205,7 +206,7 @@ class DecliningPages extends Widget
                     'dependencies' => $dependencies,
                 ]));
             }
-            return $view->renderTemplate('counter/_components/widgets/declining-pages/body', compact('widget', 'id', 'decliningPages', 'namespaceId'));
+            return $view->renderTemplate('counter/_components/widgets/declining-pages/body', compact('widget', 'id', 'decliningPages', 'namespaceId', 'widgetTitleTruncateLength'));
         } else {
             return $view->renderTemplate('counter/_components/widgets/declining-pages/body-ajax', compact('widget', 'id', 'namespaceId'));
         }

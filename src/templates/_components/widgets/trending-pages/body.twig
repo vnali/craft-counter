@@ -4,10 +4,13 @@
 {% set tableData = [] %}
 
 {% for trendingPage in trendingPages %}
-    {% set title = trendingPage.page|truncate(50, '...') %}
+    {% set title = craft.counter.removeDomainFromResult(trendingPage.page) %}
+    {% if widgetTitleTruncateLength is integer and widgetTitleTruncateLength != 0 %}
+        {% set title = title|truncate(widgetTitleTruncateLength, '...') %}
+    {% endif %}
     {% set tableData = tableData|merge([{
         title: title,
-        url: trendingPage.url|e,
+        url: trendingPage.url,
         current: trendingPage.current,
         previous: trendingPage.previous,
         growth: trendingPage.growth,

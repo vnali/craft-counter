@@ -174,13 +174,14 @@ class TrendingPages extends Widget
         $view->registerAssetBundle(CounterWidgetTableAsset::class);
         $widget = $this;
 
+        $settings = Counter::$plugin->getSettings();
         if (!$widget->useAjax) {
             $cache = Craft::$app->getCache();
             $cacheKey = 'counter-plugin-widget-' . $widget->id;
             $trendingPages = $cache->get($cacheKey);
+            /** @var Settings $settings */
+            $widgetTitleTruncateLength = $settings->widgetTitleTruncateLength;
             if ($trendingPages === false) {
-                $settings = Counter::$plugin->getSettings();
-                /** @var Settings $settings */
                 $cacheWidgetsSeconds = $settings->cacheWidgetsSeconds;
                 if (!$cacheWidgetsSeconds) {
                     $query = (new Query())
@@ -230,7 +231,7 @@ class TrendingPages extends Widget
                     'dependencies' => $dependencies,
                 ]));
             }
-            return $view->renderTemplate('counter/_components/widgets/trending-pages/body', compact('widget', 'id', 'namespaceId', 'trendingPages', 'now', 'before'));
+            return $view->renderTemplate('counter/_components/widgets/trending-pages/body', compact('widget', 'id', 'namespaceId', 'trendingPages', 'now', 'before', 'widgetTitleTruncateLength'));
         } else {
             return $view->renderTemplate('counter/_components/widgets/trending-pages/body-ajax', compact('widget', 'namespaceId', 'now', 'before'));
         }

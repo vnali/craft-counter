@@ -55,6 +55,8 @@ class Settings extends Model
 
     public ?bool $removeDomainFromResult = false;
 
+    public ?int $widgetTitleTruncateLength = 50;
+
     public function rules(): array
     {
         $rules = parent::rules();

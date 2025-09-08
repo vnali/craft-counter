@@ -4,10 +4,13 @@
 {% set tableData = [] %}
 
 {% for decliningPage in decliningPages %}
-    {% set title = decliningPage.page|truncate(50, '...') %}
+    {% set title = craft.counter.removeDomainFromResult(decliningPage.page) %}
+    {% if widgetTitleTruncateLength is integer and widgetTitleTruncateLength != 0 %}
+        {% set title = title|truncate(widgetTitleTruncateLength, '...') %}
+    {% endif %}
     {% set tableData = tableData|merge([{
         title: title,
-        url: decliningPage.url|e,
+        url: decliningPage.url,
         current: decliningPage.current,
         previous: decliningPage.previous,
         decline: decliningPage.decline,

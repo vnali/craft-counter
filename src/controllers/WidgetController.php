@@ -13,6 +13,7 @@ use craft\helpers\StringHelper as HelpersStringHelper;
 use craft\web\Controller;
 use vnali\counter\Counter;
 use vnali\counter\helpers\StringHelper;
+use vnali\counter\helpers\UrlHelper;
 use vnali\counter\models\Settings;
 use vnali\counter\records\PageVisitsRecord;
 use vnali\counter\stats\AverageVisitors;
@@ -102,6 +103,7 @@ class WidgetController extends Controller
         $settings = Counter::$plugin->getSettings();
         /** @var Settings $settings */
         $cacheWidgetsSeconds = $settings->cacheWidgetsSeconds;
+        $widgetTitleTruncateLength = $settings->widgetTitleTruncateLength;
 
         if ($class == WidgetsVisitsRecent::class) {
             /** @var WidgetsVisitsRecent $widget  */
@@ -305,7 +307,8 @@ class WidgetController extends Controller
                 $response = [];
                 foreach ($topPages as $topPage) {
                     $tableData = [];
-                    $tableData['title'] = HelpersStringHelper::safeTruncate($topPage['page'], 50, '...', true);
+                    $pageTitle = UrlHelper::removeDomainFromResult($topPage['page']);
+                    $tableData['title'] = $widgetTitleTruncateLength ? HelpersStringHelper::safeTruncate($pageTitle, $widgetTitleTruncateLength, '...', true) : $pageTitle;
                     $tableData['url'] = $topPage['url'];
                     $tableData['visits'] = $topPage['visits'];
                     $response[] = $tableData;
@@ -372,7 +375,8 @@ class WidgetController extends Controller
                 $response = [];
                 foreach ($decliningPages as $decliningPage) {
                     $tableData = [];
-                    $tableData['title'] = HelpersStringHelper::safeTruncate($decliningPage['page'], 50, '...', true);
+                    $pageTitle = UrlHelper::removeDomainFromResult($decliningPage['page']);
+                    $tableData['title'] = $widgetTitleTruncateLength ? HelpersStringHelper::safeTruncate($pageTitle, $widgetTitleTruncateLength, '...', true) : $pageTitle;
                     $tableData['url'] = $decliningPage['url'];
                     $tableData['current'] = $decliningPage['current'];
                     $tableData['previous'] = $decliningPage['previous'];
@@ -437,7 +441,8 @@ class WidgetController extends Controller
                 $response = [];
                 foreach ($notVisitedPages as $notVisitedPage) {
                     $tableData = [];
-                    $tableData['title'] = HelpersStringHelper::safeTruncate($notVisitedPage['page'], 50, '...', true);
+                    $pageTitle = UrlHelper::removeDomainFromResult($notVisitedPage['page']);
+                    $tableData['title'] = $widgetTitleTruncateLength ? HelpersStringHelper::safeTruncate($pageTitle, $widgetTitleTruncateLength, '...', true) : $pageTitle;
                     $tableData['url'] = $notVisitedPage['url'];
                     $tableData['lastVisit'] = $notVisitedPage['lastVisit'];
                     $response[] = $tableData;
@@ -501,7 +506,8 @@ class WidgetController extends Controller
                 $response = [];
                 foreach ($trendingPages as $trendingPage) {
                     $tableData = [];
-                    $tableData['title'] = HelpersStringHelper::safeTruncate($trendingPage['page'], 50, '...', true);
+                    $pageTitle = UrlHelper::removeDomainFromResult($trendingPage['page']);
+                    $tableData['title'] = $widgetTitleTruncateLength ? HelpersStringHelper::safeTruncate($pageTitle, $widgetTitleTruncateLength, '...', true) : $pageTitle;
                     $tableData['url'] = $trendingPage['url'];
                     $tableData['current'] = $trendingPage['current'];
                     $tableData['previous'] = $trendingPage['previous'];

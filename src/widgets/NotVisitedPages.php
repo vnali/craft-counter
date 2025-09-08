@@ -148,13 +148,14 @@ class NotVisitedPages extends Widget
         $view->registerAssetBundle(CounterWidgetTableAsset::class);
         $widget = $this;
 
+        $settings = Counter::$plugin->getSettings();
         if (!$widget->useAjax) {
             $cache = Craft::$app->getCache();
             $cacheKey = 'counter-plugin-widget-' . $widget->id;
             $notVisitedPages = $cache->get($cacheKey);
+            /** @var Settings $settings */
+            $widgetTitleTruncateLength = $settings->widgetTitleTruncateLength;
             if ($notVisitedPages === false) {
-                $settings = Counter::$plugin->getSettings();
-                /** @var Settings $settings */
                 $cacheWidgetsSeconds = $settings->cacheWidgetsSeconds;
                 if (!$cacheWidgetsSeconds) {
                     $query = (new Query())
@@ -204,7 +205,7 @@ class NotVisitedPages extends Widget
                     'dependencies' => $dependencies,
                 ]));
             }
-            return $view->renderTemplate('counter/_components/widgets/not-visited-pages/body', compact('widget', 'id', 'notVisitedPages', 'namespaceId'));
+            return $view->renderTemplate('counter/_components/widgets/not-visited-pages/body', compact('widget', 'id', 'notVisitedPages', 'namespaceId', 'widgetTitleTruncateLength'));
         } else {
             return $view->renderTemplate('counter/_components/widgets/not-visited-pages/body-ajax', compact('widget', 'id', 'namespaceId'));
         }
