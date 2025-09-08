@@ -1,7 +1,12 @@
 # Release Notes for Counter plugin for Craft 5
 
+## Unreleased
+- Added a `widgetTitleTruncateLength` setting to customize the truncation length of page titles.
+- Changed page title truncation to only apply to widgets.
+- Fixed a bug where URLs in widgets were unnecessarily escaped.
+
 ## 1.1.0-beta.2 - 2025-09-05
-- Added a removeDomainFromResult setting to remove the domain name from URLs in the statistics results.
+- Added a `removeDomainFromResult` setting to remove the domain name from URLs in the statistics results.
 - Changed the 'Trending pages', 'Declining pages' and 'Not visited pages' widgets to filter pages related to elements and return the element's title. [(docs)](https://plugins.vnali.dev/counter/widgets#trending-pages)
 - Changed the 'trendingPages' statistics to filter pages related to elements and return element's title. [(docs)](https://plugins.vnali.dev/counter/statistics/trending-pages)
 - Changed the 'trendingPages' statistics to return the url, elementId, elementType, and siteId. [(docs)](https://plugins.vnali.dev/counter/statistics/trending-pages)
