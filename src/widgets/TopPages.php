@@ -152,6 +152,7 @@ class TopPages extends Widget
             $topPages = $cache->get($cacheKey);
             /** @var Settings $settings */
             $widgetTitleTruncateLength = $settings->widgetTitleTruncateLength;
+            $removeDomainFromResult = $settings->removeDomainFromResult;
             if ($topPages === false) {
                 $cacheWidgetsSeconds = $settings->cacheWidgetsSeconds;
                 if (!$cacheWidgetsSeconds) {
@@ -208,7 +209,7 @@ class TopPages extends Widget
                 ]));
             }
 
-            return $view->renderTemplate('counter/_components/widgets/top-pages/body', compact('widget', 'id', 'namespaceId', 'topPages', 'widgetTitleTruncateLength'));
+            return $view->renderTemplate('counter/_components/widgets/top-pages/body', compact('widget', 'id', 'namespaceId', 'topPages', 'widgetTitleTruncateLength', 'removeDomainFromResult'));
         } else {
             return $view->renderTemplate('counter/_components/widgets/top-pages/body-ajax', compact('widget', 'id', 'namespaceId'));
         }

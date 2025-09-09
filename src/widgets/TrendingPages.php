@@ -181,6 +181,7 @@ class TrendingPages extends Widget
             $trendingPages = $cache->get($cacheKey);
             /** @var Settings $settings */
             $widgetTitleTruncateLength = $settings->widgetTitleTruncateLength;
+            $removeDomainFromResult = $settings->removeDomainFromResult;
             if ($trendingPages === false) {
                 $cacheWidgetsSeconds = $settings->cacheWidgetsSeconds;
                 if (!$cacheWidgetsSeconds) {
@@ -231,7 +232,7 @@ class TrendingPages extends Widget
                     'dependencies' => $dependencies,
                 ]));
             }
-            return $view->renderTemplate('counter/_components/widgets/trending-pages/body', compact('widget', 'id', 'namespaceId', 'trendingPages', 'now', 'before', 'widgetTitleTruncateLength'));
+            return $view->renderTemplate('counter/_components/widgets/trending-pages/body', compact('widget', 'id', 'namespaceId', 'trendingPages', 'now', 'before', 'widgetTitleTruncateLength', 'removeDomainFromResult'));
         } else {
             return $view->renderTemplate('counter/_components/widgets/trending-pages/body-ajax', compact('widget', 'namespaceId', 'now', 'before'));
         }

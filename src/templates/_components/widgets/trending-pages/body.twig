@@ -1,14 +1,17 @@
 <div class="counter-widget-stat counter-widget-table-wrapper">
-    <div id="{{ id }}"></div>
+	<div id="{{ id }}"></div>
 </div>
 {% set tableData = [] %}
 
 {% for trendingPage in trendingPages %}
-    {% set title = craft.counter.removeDomainFromResult(trendingPage.page) %}
-    {% if widgetTitleTruncateLength is integer and widgetTitleTruncateLength != 0 %}
-        {% set title = title|truncate(widgetTitleTruncateLength, '...') %}
-    {% endif %}
-    {% set tableData = tableData|merge([{
+	{% set title = trendingPage.page %}
+	{% if removeDomainFromResult %}
+		{% set title = craft.counter.removeDomainFromResult(title) %}
+	{% endif %}
+	{% if widgetTitleTruncateLength is integer and widgetTitleTruncateLength != 0 %}
+		{% set title = title|truncate(widgetTitleTruncateLength, '...') %}
+	{% endif %}
+	{% set tableData = tableData|merge([{
         title: title,
         url: trendingPage.url,
         current: trendingPage.current,
@@ -28,6 +31,7 @@ var columns = [
 new Craft.VueAdminTable({
     columns: columns,
     container: '#{{ id }}',
-    tableData: {{ tableData|json_encode|raw }}
+    tableData:
+{{ tableData|json_encode|raw }}
 });
 {% endjs %}

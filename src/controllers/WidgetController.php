@@ -104,6 +104,7 @@ class WidgetController extends Controller
         /** @var Settings $settings */
         $cacheWidgetsSeconds = $settings->cacheWidgetsSeconds;
         $widgetTitleTruncateLength = $settings->widgetTitleTruncateLength;
+        $removeDomainFromResult = $settings->removeDomainFromResult;
 
         if ($class == WidgetsVisitsRecent::class) {
             /** @var WidgetsVisitsRecent $widget  */
@@ -307,7 +308,10 @@ class WidgetController extends Controller
                 $response = [];
                 foreach ($topPages as $topPage) {
                     $tableData = [];
-                    $pageTitle = UrlHelper::removeDomainFromResult($topPage['page']);
+                    $pageTitle = $topPage['page'];
+                    if ($removeDomainFromResult) {
+                        $pageTitle = UrlHelper::removeDomainFromResult($pageTitle);
+                    }
                     $tableData['title'] = $widgetTitleTruncateLength ? HelpersStringHelper::safeTruncate($pageTitle, $widgetTitleTruncateLength, '...', true) : $pageTitle;
                     $tableData['url'] = $topPage['url'];
                     $tableData['visits'] = $topPage['visits'];
@@ -375,7 +379,10 @@ class WidgetController extends Controller
                 $response = [];
                 foreach ($decliningPages as $decliningPage) {
                     $tableData = [];
-                    $pageTitle = UrlHelper::removeDomainFromResult($decliningPage['page']);
+                    $pageTitle = $decliningPage['page'];
+                    if ($removeDomainFromResult) {
+                        $pageTitle = UrlHelper::removeDomainFromResult($pageTitle);
+                    }
                     $tableData['title'] = $widgetTitleTruncateLength ? HelpersStringHelper::safeTruncate($pageTitle, $widgetTitleTruncateLength, '...', true) : $pageTitle;
                     $tableData['url'] = $decliningPage['url'];
                     $tableData['current'] = $decliningPage['current'];
@@ -441,7 +448,10 @@ class WidgetController extends Controller
                 $response = [];
                 foreach ($notVisitedPages as $notVisitedPage) {
                     $tableData = [];
-                    $pageTitle = UrlHelper::removeDomainFromResult($notVisitedPage['page']);
+                    $pageTitle = $notVisitedPage['page'];
+                    if ($removeDomainFromResult) {
+                        $pageTitle = UrlHelper::removeDomainFromResult($pageTitle);
+                    }
                     $tableData['title'] = $widgetTitleTruncateLength ? HelpersStringHelper::safeTruncate($pageTitle, $widgetTitleTruncateLength, '...', true) : $pageTitle;
                     $tableData['url'] = $notVisitedPage['url'];
                     $tableData['lastVisit'] = $notVisitedPage['lastVisit'];
@@ -506,7 +516,10 @@ class WidgetController extends Controller
                 $response = [];
                 foreach ($trendingPages as $trendingPage) {
                     $tableData = [];
-                    $pageTitle = UrlHelper::removeDomainFromResult($trendingPage['page']);
+                    $pageTitle = $trendingPage['page'];
+                    if ($removeDomainFromResult) {
+                        $pageTitle = UrlHelper::removeDomainFromResult($pageTitle);
+                    }
                     $tableData['title'] = $widgetTitleTruncateLength ? HelpersStringHelper::safeTruncate($pageTitle, $widgetTitleTruncateLength, '...', true) : $pageTitle;
                     $tableData['url'] = $trendingPage['url'];
                     $tableData['current'] = $trendingPage['current'];

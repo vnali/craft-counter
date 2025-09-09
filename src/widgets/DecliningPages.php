@@ -156,6 +156,7 @@ class DecliningPages extends Widget
             $decliningPages = $cache->get($cacheKey);
             /** @var Settings $settings */
             $widgetTitleTruncateLength = $settings->widgetTitleTruncateLength;
+            $removeDomainFromResult = $settings->removeDomainFromResult;
             if ($decliningPages === false) {
                 $cacheWidgetsSeconds = $settings->cacheWidgetsSeconds;
                 if (!$cacheWidgetsSeconds) {
@@ -206,7 +207,7 @@ class DecliningPages extends Widget
                     'dependencies' => $dependencies,
                 ]));
             }
-            return $view->renderTemplate('counter/_components/widgets/declining-pages/body', compact('widget', 'id', 'decliningPages', 'namespaceId', 'widgetTitleTruncateLength'));
+            return $view->renderTemplate('counter/_components/widgets/declining-pages/body', compact('widget', 'id', 'decliningPages', 'namespaceId', 'widgetTitleTruncateLength', 'removeDomainFromResult'));
         } else {
             return $view->renderTemplate('counter/_components/widgets/declining-pages/body-ajax', compact('widget', 'id', 'namespaceId'));
         }

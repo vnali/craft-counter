@@ -155,6 +155,7 @@ class NotVisitedPages extends Widget
             $notVisitedPages = $cache->get($cacheKey);
             /** @var Settings $settings */
             $widgetTitleTruncateLength = $settings->widgetTitleTruncateLength;
+            $removeDomainFromResult = $settings->removeDomainFromResult;
             if ($notVisitedPages === false) {
                 $cacheWidgetsSeconds = $settings->cacheWidgetsSeconds;
                 if (!$cacheWidgetsSeconds) {
@@ -205,7 +206,7 @@ class NotVisitedPages extends Widget
                     'dependencies' => $dependencies,
                 ]));
             }
-            return $view->renderTemplate('counter/_components/widgets/not-visited-pages/body', compact('widget', 'id', 'notVisitedPages', 'namespaceId', 'widgetTitleTruncateLength'));
+            return $view->renderTemplate('counter/_components/widgets/not-visited-pages/body', compact('widget', 'id', 'notVisitedPages', 'namespaceId', 'widgetTitleTruncateLength', 'removeDomainFromResult'));
         } else {
             return $view->renderTemplate('counter/_components/widgets/not-visited-pages/body-ajax', compact('widget', 'id', 'namespaceId'));
         }
