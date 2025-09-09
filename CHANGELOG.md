@@ -1,7 +1,7 @@
 # Release Notes for Counter plugin for Craft 5
 
 ## Unreleased
-- Added a `widgetTitleTruncateLength` setting to customize the truncation length of page titles. [(docs)](https://plugins.vnali.dev/counter/settings#config-file)
+- Added a `widgetTitleTruncateLength` setting to customize how long page titles are truncated in widgets. [(docs)](https://plugins.vnali.dev/counter/settings#config-file)
 - Changed page title truncation to only apply to widgets.
 - Fixed a bug where URLs in widgets were unnecessarily escaped.
 
