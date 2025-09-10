@@ -1,9 +1,9 @@
 # Release Notes for Counter plugin for Craft 5
 
-## Unreleased
+## 1.1.0-beta.3
 - Added a `widgetTitleTruncateLength` setting to customize how long page titles are truncated in widgets. [(docs)](https://plugins.vnali.dev/counter/settings#config-file)
 - Changed page title truncation to only apply to widgets.
-- Fixed a bug where URLs in widgets were unnecessarily escaped.
+- Fixed a bug that caused widget URLs to be altered (HTML-escaped) unnecessarily.
 
 ## 1.1.0-beta.2 - 2025-09-05
 - Added a `removeDomainFromResult` setting to remove the domain name from URLs in the statistics results.
