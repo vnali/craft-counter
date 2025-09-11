@@ -1,6 +1,6 @@
 # Release Notes for Counter plugin for Craft 5
 
-## Unreleased
+## 1.1.0 - 2025-09-11
 - `widgetTitleTruncateLength` and `removeDomainFromResult` can now be configured via the plugin settings.
 - Removed the advanced setting “Prevent HTTP requests for the counter” from the plugin settings; it can now be configured via `disableCountController` in the config file. [(docs)](https://plugins.vnali.dev/counter/settings#config-file)
 
