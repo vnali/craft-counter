@@ -13,6 +13,7 @@ use craft\web\UrlManager;
 use vnali\counter\base\DateInterface;
 use vnali\counter\Counter;
 use vnali\counter\models\Settings;
+use yii\caching\TagDependency;
 use yii\web\ForbiddenHttpException;
 use yii\web\Response;
 
@@ -116,14 +117,15 @@ class SettingsController extends Controller
         }
         $settings->onlineThreshold = ($this->request->getBodyParam('onlineThreshold') != '') ? $this->request->getBodyParam('onlineThreshold') : null;
         $settings->visitsInterval = ($this->request->getBodyParam('visitsInterval') != '') ? $this->request->getBodyParam('visitsInterval') : null;
+        $settings->widgetTitleTruncateLength = ($this->request->getBodyParam('widgetTitleTruncateLength') != '') ? $this->request->getBodyParam('widgetTitleTruncateLength') : null;
         $settings->registerCounter = $this->request->getBodyParam('registerCounter', $settings->registerCounter);
         $settings->removeAllQueryParams = $this->request->getBodyParam('removeAllQueryParams', $settings->removeAllQueryParams);
         $settings->removeQueryParams = $this->request->getBodyParam('removeQueryParams', $settings->removeQueryParams);
         $settings->removeUrlFragment = $this->request->getBodyParam('removeUrlFragment', $settings->removeUrlFragment);
         $settings->ignoreAllUsers = $this->request->getBodyParam('ignoreAllUsers', $settings->ignoreAllUsers);
         $settings->ignoreBots = $this->request->getBodyParam('ignoreBots', $settings->ignoreBots);
-        $settings->disableCountController = $this->request->getBodyParam('disableCountController', $settings->disableCountController);
         $settings->supportOutdatedBrowsers = $this->request->getBodyParam('supportOutdatedBrowsers', $settings->supportOutdatedBrowsers);
+        $settings->removeDomainFromResult = $this->request->getBodyParam('removeDomainFromResult', $settings->removeDomainFromResult);
 
         if (!isset($settings->keepVisitorsInSeconds)) {
             $settings->keepVisitorsInSeconds = -1;
@@ -195,6 +197,8 @@ class SettingsController extends Controller
         if (!Craft::$app->getPlugins()->savePluginSettings(Counter::$plugin, $settings->getAttributes())) {
             return $this->asModelFailure($settings, Craft::t('counter', 'Couldn’t save general settings.'), 'settings');
         }
+
+        TagDependency::invalidate(Craft::$app->cache, 'counter-plugin');
 
         return $this->asSuccess(Craft::t('counter', 'General settings saved.'));
     }

@@ -24,5 +24,6 @@ return [
         'autoImportJquery' => true, // When the 'Support outdated browsers' setting is enabled, the Counter plugin imports jQuery. Set this to false if your frontend already includes jQuery
         'removeDomainFromResult' => false, // Remove domain part of url from statistics results if true
         'widgetTitleTruncateLength' => 50, // Maximum number of characters for widget titles. A value of 0 disables truncation; any other value truncates the title to the specified length. The default is 50.
+        'disableCountController' => false, // Default is false. When Register counter automatically is disabled, By enabling this option you can prevent HTTP requests for counting visits. only enable this option if you are calling the counter via services in Twig.
     ],
 ];

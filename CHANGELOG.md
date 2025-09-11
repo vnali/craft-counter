@@ -1,5 +1,9 @@
 # Release Notes for Counter plugin for Craft 5
 
+## Unreleased
+- `widgetTitleTruncateLength` and `removeDomainFromResult` can now be configured via the plugin settings.
+- Removed the advanced setting “Prevent HTTP requests for the counter” from the plugin settings; it can now be configured via `disableCountController` in the config file. [(docs)](https://plugins.vnali.dev/counter/settings#config-file)
+
 ## 1.1.0-beta.3 - 2025-09-10
 - Added a `widgetTitleTruncateLength` setting to customize how long page titles are truncated in widgets. [(docs)](https://plugins.vnali.dev/counter/settings#config-file)
 - Changed page title truncation to only apply to widgets.

@@ -35,21 +35,8 @@
                         errors: settings.getErrors('supportOutdatedBrowsers'),
                         value: 1,
                         on: settings.supportOutdatedBrowsers is defined ? settings.supportOutdatedBrowsers,
-                        instructions: 'By enabling this option, the counter script will function in browsers such as IE11.'|t('counter'),
-                        tip: 'Disabling this option will make the page load faster.'|t('counter'),
-                    }) }}
-                </div>
-                <div class="grid-item item14">
-                    {{ forms.lightswitchField({
-                        label: 'Prevent HTTP requests for the counter.'|t('counter'),
-                        id: 'disableCountController',
-                        name: 'disableCountController',
-                        required: false,
-                        errors: settings.getErrors('disableCountController'),
-                        value: 1,
-                        on: settings.disableCountController is defined ? settings.disableCountController,
-                        instructions: 'Enable this option if your site does not have static cache enabled and you are calling the counter via services in Twig.'|t('counter'),
-                        tip: 'Enabling this option prevents access to the counter via the HTTP requests and registration of the counter asset.'|t('counter'),
+                        instructions: 'By enabling this option, the counter script will function in browsers such as IE11. Disabling this option will make the page load faster.'|t('counter'),
+                        tip: 'When this option is enabled, the plugin automatically imports jQuery on your frontend. If you already have jQuery included, disable this behavior by setting `autoImportJquery` to false in the config file.'|t('counter'),
                     }) }}
                 </div>
                 <div class="break-item break4">
@@ -184,6 +171,37 @@
             <div class="break-item break3">
                 <hr>
             </div>
+            <div class="grid-item item15">
+                {{ forms.lightswitchField({
+                    label: 'Remove domain from result in widgets'|t('counter'),
+                    id: 'removeDomainFromResult',
+                    name: 'removeDomainFromResult',
+                    required: false,
+                    errors: settings.getErrors('removeDomainFromResult'),
+                    value: 1,
+                    on: settings.removeDomainFromResult is defined ? settings.removeDomainFromResult,
+                    instructions: 'Enable this to remove domain part of URL in widgets.'|t('counter'),
+                }) }}
+            </div>
+            <div class="grid-item item16">
+                {{ forms.textField({
+                    type: "number",
+                    label: 'Title Truncation Length in Widgets'|t('counter'),
+                    id: 'widgetTitleTruncateLength',
+                    name: 'widgetTitleTruncateLength',
+                    inputmode: 'numeric',
+                    min: 0,
+                    max: 500,
+                    required: false,
+                    errors: settings.getErrors('widgetTitleTruncateLength'),
+                    value: settings.widgetTitleTruncateLength,
+                    instructions: 'How long page titles are truncated in widgets.'|t('counter'),
+                    tip: 'Maximum number of characters for widget titles. A value of 0 disables truncation; any other value truncates the title to the specified length.'|t('counter'),
+                }) }}
+            </div>
+            <div class="break-item break5">
+                <hr>
+            </div>
             <div class="grid-item item11">
                 {% set fieldRows = [] %}
                 {% for site in craft.app.sites.getAllSites() %}
@@ -262,18 +280,12 @@
     if ($('input[name=registerCounter]').val()) {
         $('.item13').css('display', 'block');
     }
-    if (!$('input[name=registerCounter]').val()) {
-        $('.item14').css('display', 'block');
-    }
     $('#registerCounter').on('change', function() {
         var isEnabled = $(this).find('input').val();
         if (isEnabled) {
-            $('.item14').css('display', 'none');
-            $('#disableCountController.lightswitch').data('lightswitch').turnOff(true);
             $('.item13').css('display', 'block');
         } else {
             $('.item13').css('display', 'none');
-            $('.item14').css('display', 'block');
         }
     });
     if ($('input[name=removeAllQueryParams]').val() == '1') {
@@ -313,7 +325,7 @@
 
 {% css %}
 
-    .item13, .item14{
+    .item13{
         display: none;
     }
 
@@ -325,7 +337,6 @@
         display: grid;
         grid-template-areas: 
             "item1 item13 ."
-            "item14 item14 ."
             "break4 break4 break4"
             "item2 item3 ."
             "break1 break1 break1"
@@ -335,6 +346,8 @@
             "item7 item8 ."
             "item9 item10 item10"
             "break3 break3 break3"
+            "item15 item16 ."
+            "break5 break5 break5"
             "item11 item11 item11"
             "item12 item12 item12";
         gap: 10px;
@@ -403,8 +416,12 @@
         grid-area: item13;
     }
 
-    .item14 {
-        grid-area: item14;
+    .item15 {
+        grid-area: item15;
+    }
+
+    .item16 {
+        grid-area: item16;
     }
 
     .break1 {
@@ -421,6 +438,10 @@
 
     .break4 {
         grid-area: break4;
+    }
+
+    .break5 {
+        grid-area: break5;
     }
 
     .grid-item::after {

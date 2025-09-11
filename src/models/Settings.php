@@ -62,9 +62,10 @@ class Settings extends Model
         $rules = parent::rules();
         $rules[] = [['onlineThreshold', 'visitsInterval'], 'required'];
         $rules[] = [['removeQueryParams', 'siteSettings'], 'safe'];
-        $rules[] = [['registerCounter', 'removeAllQueryParams', 'removeUrlFragment', 'ignoreAllUsers', 'ignoreBots', 'supportOutdatedBrowsers', 'disableCountController', 'anonymizeIp', 'ipInEvent', 'anonymizedIpInEvent'], 'in', 'range' => [0, 1]];
+        $rules[] = [['registerCounter', 'removeAllQueryParams', 'removeUrlFragment', 'ignoreAllUsers', 'ignoreBots', 'supportOutdatedBrowsers', 'anonymizeIp', 'ipInEvent', 'anonymizedIpInEvent'], 'in', 'range' => [0, 1]];
         $rules[] = [['onlineThreshold'], 'integer', 'min' => 1, 'max' => 600];
         $rules[] = [['visitsInterval'], 'integer', 'min' => 0, 'max' => 600];
+        $rules[] = [['widgetTitleTruncateLength'], 'integer', 'min' => 0, 'max' => 500];
 
         return $rules;
     }
