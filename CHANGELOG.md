@@ -1,6 +1,6 @@
 # Release Notes for Counter plugin for Craft 5
 
-## Unreleased
+## 1.1.1 - 2025-10-14
 - Fixed an issue where the plugin threw an error on sites using a table prefix.
 
 ## 1.1.0 - 2025-09-11
