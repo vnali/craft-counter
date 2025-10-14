@@ -8,6 +8,7 @@ namespace vnali\counter\services;
 
 use Craft;
 use craft\db\Query;
+use craft\db\Table;
 use craft\elements\Category;
 use craft\elements\Entry;
 use craft\elements\Tag;
@@ -900,25 +901,25 @@ class pagesService extends Component
                     $query = (new \yii\db\Query());
                     if (Craft::$app->getDb()->getIsPgsql()) {
                         $query->select('es."elementId", es.title, e.type')
-                            ->from(['es' => 'elements_sites'])
-                            ->innerJoin(['e' => 'elements'], 'e.id = es."elementId"');
+                            ->from(['es' => Table::ELEMENTS_SITES])
+                            ->innerJoin(['e' => Table::ELEMENTS], 'e.id = es."elementId"');
                     } else {
                         $query->select('es.elementId, es.title, e.type')
-                            ->from(['es' => 'elements_sites'])
-                            ->innerJoin(['e' => 'elements'], 'e.id = es.elementId');
+                            ->from(['es' => Table::ELEMENTS_SITES])
+                            ->innerJoin(['e' => Table::ELEMENTS], 'e.id = es.elementId');
                     }
                 } else {
                     $query = (new \yii\db\Query());
                     if (Craft::$app->getDb()->getIsPgsql()) {
                         $query->select('es."elementId", c.title, e.type')
-                            ->from(['es' => 'elements_sites'])
-                            ->innerJoin(['e' => 'elements'], 'e.id = es."elementId"')
-                            ->innerJoin(['c' => 'content'], 'c."elementId" = e.id AND c."siteId" = es."siteId"');
+                            ->from(['es' => Table::ELEMENTS_SITES])
+                            ->innerJoin(['e' => Table::ELEMENTS], 'e.id = es."elementId"')
+                            ->innerJoin(['c' => Table::CONTENT], 'c."elementId" = e.id AND c."siteId" = es."siteId"');
                     } else {
                         $query->select('es.elementId, c.title, e.type')
-                            ->from(['es' => 'elements_sites'])
-                            ->innerJoin(['e' => 'elements'], 'e.id = es.elementId')
-                            ->innerJoin(['c' => 'content'], 'c.elementId = e.id AND c.siteId = es.siteId');
+                            ->from(['es' => Table::ELEMENTS_SITES])
+                            ->innerJoin(['e' => Table::ELEMENTS], 'e.id = es.elementId')
+                            ->innerJoin(['c' => Table::CONTENT], 'c.elementId = e.id AND c.siteId = es.siteId');
                     }
                 }
 
@@ -973,22 +974,22 @@ class pagesService extends Component
                 if (version_compare($currentVersion, $targetVersion, '>=')) {
                     $query = (new \yii\db\Query())
                         ->select('es.title, e.type, es.elementId')
-                        ->from(['es' => 'elements_sites']);
+                        ->from(['es' => Table::ELEMENTS_SITES]);
                     if (Craft::$app->getDb()->getIsPgsql()) {
-                        $query->innerJoin(['e' => 'elements'], 'e.id = es."elementId"');
+                        $query->innerJoin(['e' => Table::ELEMENTS], 'e.id = es."elementId"');
                     } else {
-                        $query->innerJoin(['e' => 'elements'], 'e.id = es.elementId');
+                        $query->innerJoin(['e' => Table::ELEMENTS], 'e.id = es.elementId');
                     }
                 } else {
                     $query = (new \yii\db\Query())
                         ->select('c.title, e.type, es.elementId')
-                        ->from(['es' => 'elements_sites']);
+                        ->from(['es' => Table::ELEMENTS_SITES]);
                     if (Craft::$app->getDb()->getIsPgsql()) {
-                        $query->innerJoin(['e' => 'elements'], 'e.id = es."elementId"')
-                            ->innerJoin(['c' => 'content'], 'c."elementId" = e.id AND c."siteId" = es."siteId"');
+                        $query->innerJoin(['e' => Table::ELEMENTS], 'e.id = es."elementId"')
+                            ->innerJoin(['c' => Table::CONTENT], 'c."elementId" = e.id AND c."siteId" = es."siteId"');
                     } else {
-                        $query->innerJoin(['e' => 'elements'], 'e.id = es.elementId')
-                            ->innerJoin(['c' => 'content'], 'c.elementId = e.id AND c.siteId = es.siteId');
+                        $query->innerJoin(['e' => Table::ELEMENTS], 'e.id = es.elementId')
+                            ->innerJoin(['c' => Table::CONTENT], 'c.elementId = e.id AND c.siteId = es.siteId');
                     }
                 }
                 $query->where([
@@ -1001,6 +1002,7 @@ class pagesService extends Component
                 $elementRecord = $query->one();
                 if ($elementRecord) {
                     $query = (new Query());
+                    // todo: replace {{%elements}} table with Table::ELEMENTS
                     if (Craft::$app->getDb()->getIsPgsql()) {
                         $query->select(['max("dateUpdated")'])
                             ->from('{{%elements}}')
