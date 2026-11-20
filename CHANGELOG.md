@@ -1,5 +1,10 @@
 # Release Notes for Counter plugin for Craft 5
 
+## Unreleased
+> {warning} This is a security release. Please update as soon as possible.
+
+- Fixed an XSS vulnerability.
+
 ## 1.1.1 - 2025-10-14
 - Fixed an issue where the plugin threw an error on sites using a table prefix.
 

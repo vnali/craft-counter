@@ -152,7 +152,7 @@
         items: ['{{ widget.pageId }}'],
         render: {
             option: function(item, escape) {
-                return '<div>' + item.name + '</div>';
+                return '<div>' + escape(item.name) + '</div>';
             }
         },
         load: function(query, callback) {
