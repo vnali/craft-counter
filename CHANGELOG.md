@@ -1,6 +1,6 @@
 # Release Notes for Counter plugin for Craft 5
 
-## Unreleased
+## 1.1.2 - 2026-11-26
 > {warning} This is a security release. Please update as soon as possible.
 
 - Fixed an XSS vulnerability.
